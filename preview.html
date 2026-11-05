@@ -80,16 +80,17 @@
       right: 28px;
       top: 620px;
       z-index: 3;
-      max-width: 360px;
       background: #fff;
       border: 6px solid #111;
       border-radius: 22px;
-      padding: 16px 20px;
+      padding: 18px 28px;
       box-shadow: 8px 8px 0 #111;
       transform: rotate(4deg);
-      font-size: 30px;
+      font-size: 64px;
       font-weight: 900;
-      line-height: 1.3;
+      line-height: 1.15;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
     }
     .stamp {
       position: absolute;
@@ -230,7 +231,7 @@
         var model = G.figureModel(raw);
         if (rewrite) document.getElementById('fp').value = model.fp;
         document.getElementById('code').textContent = model.fp;
-        document.getElementById('meta').textContent = model.cardLine;
+        document.getElementById('meta').textContent = model.displayName;
         document.getElementById('panel').innerHTML = G.figureSVG(model.fp, 500);
         paint('c320', model.fp, 320);
         paint('c128', model.fp, 128);
@@ -250,7 +251,7 @@
       }
       function fillTools() {
         var G = window.YKBD_FIGURE;
-        document.getElementById('lead').textContent = '组合数 ' + G.combo + '。地址栏可用 ?fp=XXXX-XXXX-XXXX ，本页不联网。白卡只放形象、部件名和指纹码。';
+        document.getElementById('lead').textContent = '组合数 ' + G.combo + '。地址栏可用 ?fp=XXXX-XXXX-XXXX ，本页不联网。白卡只放形象、中文名和编码。';
         var seeds = document.getElementById('seeds');
         var i;
         for (i = 0; i < EXAMPLES.length; i++) {

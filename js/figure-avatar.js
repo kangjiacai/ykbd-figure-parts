@@ -202,6 +202,26 @@
     if (mainFill === '#C9B8FF') return '#C8F542';
     return '#C9B8FF';
   }
+  /* 四字合成名：前词 + 后词，只由规范化后的 12 位码决定。 */
+  var NAME_L = [
+    '盐巴', '雾窗', '纸鹤', '月光', '晴天', '晚风', '海盐', '青苔',
+    '薄荷', '电台', '松果', '信笺', '麦芽', '果酱', '码头', '蝉鸣',
+    '暖桌', '纸船', '柠檬', '夜航', '糖纸', '雨巷', '青柠', '候鸟',
+    '潮汐', '绒线', '晨雾', '桃核', '风铃', '银杏', '云朵', '星子'
+  ];
+  var NAME_R = [
+    '气球', '火柴', '汽水', '拉面', '板栗', '灯塔', '柚子', '邮戳',
+    '饼干', '墨水', '柳絮', '炉火', '雪松', '琴键', '藤蔓', '贝壳',
+    '麦浪', '灯芯', '霜糖', '茶渍', '枫糖', '橘瓣', '苇岸', '瓷杯',
+    '线团', '露台', '热汤', '铁盒', '蜡笔', '毛线', '船票', '布丁'
+  ];
+  function figureName(raw) {
+    var h = fnv('ykbd-cn-name:' + raw);
+    var left = NAME_L[h % NAME_L.length];
+    h = Math.imul(h ^ (h >>> 16), 0x7feb352d) >>> 0;
+    return left + NAME_R[h % NAME_R.length];
+  }
+
   function pub(list) {
     var out = [];
     for (var i = 0; i < list.length; i++) out.push({ id: list[i].id, name: list[i].name });
@@ -252,6 +272,7 @@
         shoe: detail
       },
       sleeve: sleeve,
+      displayName: figureName(raw),
       cardLine: HAIR[hi].name + ' · ' + EYES[ei].name + ' · ' + BODY[bi].name + ' · ' + POSE[pi].name
     };
   }

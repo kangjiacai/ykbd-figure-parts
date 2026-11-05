@@ -192,9 +192,15 @@ else {
 console.log('MODEL ' + a.hair.name + ' / ' + a.eyes.name + ' / ' + a.mouth.name + ' / ' + a.body.name + ' / ' + a.pose.name + ' / ' + a.main.name + ' / ' + a.accent.name + ' / ' + a.accessory.name);
 
 var samples = ['B665-6G14-RPME', '0000-0000-0000', '0708-0253-0243', '0509-0736-0305', '0401-0174-0474'];
+var seenName = {};
 for (i = 0; i < samples.length; i++) {
   var m = G.figureModel(samples[i]);
-  console.log('SEED ' + m.fp + ' ' + m.hair.id + ' ' + m.eyes.id + ' ' + m.mouth.id + ' ' + m.body.id + ' ' + m.pose.id + ' ' + m.main.id + ' ' + m.accent.id + ' ' + m.accessory.id);
+  console.log('SEED ' + m.fp + ' ' + m.displayName + ' ' + m.hair.id + ' ' + m.eyes.id + ' ' + m.mouth.id + ' ' + m.body.id + ' ' + m.pose.id + ' ' + m.main.id + ' ' + m.accent.id + ' ' + m.accessory.id);
+  if (!m.displayName || m.displayName.length < 2 || m.displayName.length > 4) fail('name len ' + m.fp + ' ' + m.displayName);
+  if (m.displayName.indexOf('·') >= 0) fail('name parts ' + m.fp);
+  if (G.figureModel(m.fp).displayName !== m.displayName) fail('name unstable ' + m.fp);
+  if (seenName[m.displayName]) fail('name collide ' + m.displayName);
+  seenName[m.displayName] = 1;
 }
 
 if (fails.length) {
