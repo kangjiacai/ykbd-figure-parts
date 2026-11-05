@@ -13,8 +13,8 @@ SEEDS=(
   "0509-0736-0305"
   "0401-0174-0474"
 )
-W=668
-H=900
+W=1080
+H=1440
 for s in "${SEEDS[@]}"; do
   DIR="/tmp/cr-sample-$s"
   rm -rf "$DIR"
@@ -26,7 +26,7 @@ for s in "${SEEDS[@]}"; do
     --hide-scrollbars \
     --user-data-dir="$DIR" \
     --timeout=8000 \
-    --force-device-scale-factor=2 \
+    --force-device-scale-factor=1 \
     --default-background-color=FFE6E8EC \
     --window-size="${W},${H}" \
     --screenshot="$OUT/$s.png" \
