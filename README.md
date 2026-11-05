@@ -13,7 +13,7 @@
 - 页面上有输入框和 5 个样张种子，点一下就换
 - 部件一览：`tools/sheet.html`（12 种发型、10 种眼睛、10 种嘴、8 种衣服、8 种姿势、8 种配件）
 
-`?shot=1` 会藏起说明，留下 1080×1440 的黄绿斜贴卡，用来截样张。贴纸里的小人整身居中，右侧只有指纹码生成的四字中文名，右下是编码。不写部件说明，不写成绩。硬规则原文：`docs/FIGURE_HARD_RULES.md`（与根目录 `RULES.md` 相同）。视觉气质见 `samples/reference-b3/`。
+`?shot=1` 会藏起说明，留下 1080×1440 的黄绿斜贴卡，用来截样张。贴纸里的小人整身居中，右侧只有指纹码生成的四字中文名，右下是编码。不写部件说明，不写成绩。硬规则原文：`docs/FIGURE_HARD_RULES.md`（与根目录 `RULES.md` 相同）。定稿卡面见 `samples/approved/`（2026-11-06 用户审过，五张都留）。旧目录 `samples/reference-b3/` 已删除。
 
 ## 种子怎么切
 
@@ -68,7 +68,7 @@
 
 ## 视觉
 
-轻 Neo-Brutal：冷灰底 `#E6E8EC`，黄绿卡 `#C8F542`，白贴纸斜放，约 4–6px 黑描边，硬投影（纯色偏移，没有模糊）。强调色是荧光黄绿 `#C8F542` 和淡紫 `#C9B8FF` 这一族。小人是大头小身，圆端点；头上有耳、鼻、眉和腮红，衣服按类型画领口、扣、口袋或帽绳，鞋有鞋底，手臂和腿是有体积的色块。画布里整身都在框内，贴进卡片时也要居中留白，不能裁掉脚。小尺寸仍能分辨四肢。绘制过程没有随机数。完成度对齐 `samples/reference-b3/B3.png`，不要退回方块眼、梯形衣、细棍腿那一版。
+轻 Neo-Brutal：冷灰底 `#E6E8EC`，黄绿卡 `#C8F542`，白贴纸斜放，约 4–6px 黑描边，硬投影（纯色偏移，没有模糊）。强调色是荧光黄绿 `#C8F542` 和淡紫 `#C9B8FF` 这一族。小人是大头小身，圆端点；头上有耳、鼻、眉和腮红，衣服按类型画领口、扣、口袋或帽绳，鞋有鞋底，手臂和腿是有体积的色块。画布里整身都在框内，贴进卡片时也要居中留白，不能裁掉脚。小尺寸仍能分辨四肢。绘制过程没有随机数。完成度对齐 `samples/approved/B3.png`，不要退回方块眼、梯形衣、细棍腿那一版。
 
 ## API
 
@@ -90,8 +90,7 @@
 | `js/fingerprint.js` | 指纹编解码、FNV、rng |
 | `preview.html` | 本地预览 |
 | `tools/sheet.html` | 部件一览 |
-| `samples/*.png` | 已清空。引擎 samples 已清空，等待用户审过的定稿再放入 |
-| `samples/reference-b3/` | 旧视觉气质参考，暂留。不是被否决的引擎样张 |
+| `samples/approved/` | 仅此五张用户审过的定稿成绩卡：`B3.png`、`B3b.png`、`B3c.png`、`B3d-short.png`、`B3e-bangs.png`。旧 `samples/reference-b3/` 已删除 |
 | `docs/FIGURE_HARD_RULES.md` | 硬规则原文 |
 | `RULES.md` | 与上一份相同的原文副本 |
 | `docs/CODEX_FIGURE_AVATAR_BRIEF.md` | 任务规格原文 |
@@ -100,15 +99,15 @@
 | `tools/canvas-check.html` | canvas 像素对照 |
 | `tools/hard-rules-check.html` | 220+ 种子的脖子、额前、四肢检查 |
 | `tools/verify.sh` | 上面三项一起跑 |
-| `tools/render-samples.sh` | 截图脚本。当前引擎样张已被否决，审定稿之前不要把输出提交回 `samples/` |
+| `tools/render-samples.sh` | 截图脚本。默认拒绝运行。临时渲图只写到仓库外，不写回 `samples/` |
 
 ## 样张
 
-引擎 samples 已清空，等待用户审过的定稿再放入。
+用户审过的定稿只在 `samples/approved/`。2026-11-06 勾选五张都留：`B3.png`、`B3b.png`、`B3c.png`、`B3d-short.png`、`B3e-bangs.png`。它们是圆头顶、短脖、身首拆分、发型一整套的成绩卡。仓库里的样张图片只有这五张。
 
-`samples/` 根目录里由当前引擎渲出的样张已全部删除，包括 `B665-6G14-RPME.png`、`0000-0000-0000.png`、`0708-0253-0243.png`、`0509-0736-0305.png`、`0401-0174-0474.png`。用户否决了这些图的裁切、衔接和叉腰。它们不能再当视觉参考，也不要重新提交。
+旧目录 `samples/reference-b3/` 已整目录删除，不再当视觉参考。早先被否决的引擎渲图也不要放回 `samples/`，包括 `B665-6G14-RPME.png`、`0000-0000-0000.png`、`0708-0253-0243.png`、`0509-0736-0305.png`、`0401-0174-0474.png`。用户否决了那些图的裁切、衔接和叉腰。
 
-`preview.html` 仍可在本地用这些种子看当前引擎，那只是预览代码，不是定稿。视觉气质只看 `samples/reference-b3/`。用户审过的定稿放进 `samples/` 之前，不要运行 `tools/render-samples.sh` 把新截图写回仓库。
+`preview.html` 仍可在本地用种子看当前引擎，那只是预览，不是定稿。`tools/render-samples.sh` 默认拒绝运行，而且不会把临时截图写进 `samples/`。
 
 ## Chrome 61 自检
 
