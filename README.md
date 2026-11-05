@@ -77,7 +77,7 @@
 | 函数 | 作用 |
 | --- | --- |
 | `figureModel(fp)` | 规范化后的码、各维下标和名字、配色 |
-| `figureSVG(fp, size)` | SVG 字符串。`size` 是边长，默认 320。坐标系 320×320 |
+| `figureSVG(fp, size)` | SVG 字符串。`size` 是宽度，默认 320。绘制坐标仍是 320×320，viewBox 四周留白，贴纸不会裁到头顶和鞋 |
 | `drawFigure(ctx, fp, x, y, size)` | 同步画到 canvas。`x, y` 是左上角，`size` 是边长 |
 
 若 `window.YKBD_F` 已经存在，本文件会把 `F.avatarSVG(fp)` 和 `F.drawAvatar(ctx, fp, x, y, size)` 指到新引擎，调用方式和旧头像相同。`F.encode` / `F.decode` / `F.fnv` / `F.rng` 与小工具兼容。预览卡只写中文名和编码，不写成绩。`figureModel(fp).displayName` 是这枚码的四字名，`cardLine` 只给对照表用，不上卡。
