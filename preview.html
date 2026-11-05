@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>你可能不知道 · 指纹小人</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: #E6E8EC;
+      color: #000;
+      font-family: "WenQuanYi Micro Hei", "Droid Sans Fallback", "Noto Sans CJK SC", sans-serif;
+    }
+    .page { padding: 28px 16px 48px; }
+    .stage { width: 600px; margin: 0 auto; }
+    .card {
+      background: #fff;
+      border: 4px solid #000;
+      border-radius: 32px;
+      box-shadow: 10px 10px 0 #000;
+      padding: 22px 22px 18px;
+    }
+    .badge {
+      display: inline-block;
+      background: #C9B8FF;
+      border: 3px solid #000;
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .panel {
+      margin: 16px 10px 14px 0;
+      background: #D9CCFF;
+      border: 4px solid #000;
+      border-radius: 22px;
+      box-shadow: 8px 8px 0 #000;
+    }
+    .panel svg { display: block; width: 100%; height: auto; }
+    .code {
+      margin: 14px 0 0;
+      text-align: center;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      line-height: 1.2;
+    }
+    .meta {
+      margin: 6px 0 0;
+      min-height: 44px;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 22px;
+      white-space: pre-line;
+    }
+    .foot {
+      margin: 8px 0 0;
+      text-align: center;
+      color: #5E6872;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .tools { width: 600px; margin: 22px auto 0; }
+    h1 { font-size: 20px; margin: 0 0 8px; }
+    p.lead { margin: 0 0 12px; font-size: 14px; line-height: 1.5; }
+    form { margin: 0 0 12px; }
+    input[type="text"] {
+      font-family: inherit;
+      font-size: 16px;
+      border: 3px solid #000;
+      border-radius: 10px;
+      padding: 8px 10px;
+      width: 280px;
+      box-shadow: 3px 3px 0 #000;
+      background: #fff;
+    }
+    button.btn {
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 700;
+      border: 3px solid #000;
+      border-radius: 10px;
+      padding: 8px 14px;
+      margin: 0 0 0 8px;
+      background: #C8F542;
+      box-shadow: 3px 3px 0 #000;
+      cursor: pointer;
+    }
+    .seeds { margin: 0 0 14px; }
+    button.seed {
+      font-family: inherit;
+      font-size: 13px;
+      border: 3px solid #000;
+      border-radius: 999px;
+      padding: 4px 10px;
+      margin: 0 8px 8px 0;
+      background: #fff;
+      box-shadow: 2px 2px 0 #000;
+      cursor: pointer;
+    }
+    table { border-collapse: collapse; width: 100%; font-size: 13px; background: #fff; }
+    th, td { border: 2px solid #000; padding: 4px 6px; text-align: left; vertical-align: top; }
+    th { background: #F7F4EC; }
+    .swatch { display: inline-block; width: 14px; height: 14px; border: 2px solid #000; vertical-align: -2px; margin-right: 4px; }
+    .row2 { margin-top: 16px; }
+    canvas.fig {
+      background: #D9CCFF;
+      border: 3px solid #000;
+      box-shadow: 4px 4px 0 #000;
+    }
+    .cap { font-size: 13px; font-weight: 700; margin: 0 0 6px; }
+    .canvases canvas { margin: 0 16px 0 0; vertical-align: top; }
+    body.shot { width: 668px; height: 900px; overflow: hidden; }
+    body.shot .page { padding: 26px 0 0 24px; }
+    body.shot .tools { display: none; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="stage">
+      <div class="card" id="card">
+        <div class="badge">本局限定 · 指纹小人</div>
+        <div class="panel" id="panel"></div>
+        <div class="code" id="code"></div>
+        <div class="meta" id="meta"></div>
+        <div class="foot">发型 / 五官 / 身体 / 四肢 / 配色由指纹切段决定 · 示意稿</div>
+      </div>
+    </div>
+    <div class="tools">
+      <h1>你可能不知道 · 简笔小人</h1>
+      <p class="lead" id="lead"></p>
+      <form id="form" action="#">
+        <input id="fp" type="text" autocomplete="off" spellcheck="false">
+        <button class="btn" type="submit">换种子</button>
+      </form>
+      <div class="seeds" id="seeds"></div>
+      <table id="dims"></table>
+      <div class="row2 canvases">
+        <div style="display:inline-block;margin-right:18px;">
+          <p class="cap">canvas · drawFigure · 320</p>
+          <canvas class="fig" id="c320" width="320" height="320"></canvas>
+        </div>
+        <div style="display:inline-block;">
+          <p class="cap">128 边长仍能看见四肢</p>
+          <canvas class="fig" id="c128" width="128" height="128"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="js/fingerprint.js"></script>
+  <script src="js/figure-avatar.js"></script>
+  <script>
+    (function () {
+      var EXAMPLES = [
+        'B665-6G14-RPME',
+        '0000-0000-0000',
+        '0708-0253-0243',
+        '0509-0736-0305',
+        '0401-0174-0474'
+      ];
+      function param(name) {
+        var bag = String(window.location.search || '').replace(/^\?/, '');
+        var hash = String(window.location.hash || '').replace(/^#/, '');
+        var src = bag + '&' + hash;
+        var parts = src.split('&');
+        var i;
+        for (i = 0; i < parts.length; i++) {
+          var kv = parts[i].split('=');
+          var k = kv[0] || '';
+          try { k = decodeURIComponent(k); } catch (e) { k = kv[0]; }
+          if (k === name) {
+            var rest = kv.slice(1).join('=');
+            try { return decodeURIComponent(rest.replace(/\+/g, ' ')); } catch (e2) { return rest; }
+          }
+        }
+        return '';
+      }
+      function render(raw, rewrite) {
+        var G = window.YKBD_FIGURE;
+        var model = G.figureModel(raw);
+        if (rewrite) document.getElementById('fp').value = model.fp;
+        document.getElementById('code').textContent = model.fp;
+        document.getElementById('meta').textContent = model.cardLine;
+        document.getElementById('panel').innerHTML = G.figureSVG(model.fp, 520);
+        paint('c320', model.fp, 320);
+        paint('c128', model.fp, 128);
+        try {
+          if (param('shot') !== '1' && window.history && history.replaceState) {
+            history.replaceState(null, '', '?fp=' + encodeURIComponent(model.fp));
+          }
+        } catch (err) {}
+      }
+      function paint(id, fp, size) {
+        var c = document.getElementById(id);
+        if (!c || !c.getContext) return;
+        var ctx = c.getContext('2d');
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, c.width, c.height);
+        drawFigure(ctx, fp, 0, 0, size);
+      }
+      function fillTools() {
+        var G = window.YKBD_FIGURE;
+        document.getElementById('lead').textContent = '组合数 ' + G.combo + '。地址栏可用 ?fp=XXXX-XXXX-XXXX ，本页不联网。';
+        var seeds = document.getElementById('seeds');
+        var i;
+        for (i = 0; i < EXAMPLES.length; i++) {
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'seed';
+          b.setAttribute('data-fp', EXAMPLES[i]);
+          b.textContent = EXAMPLES[i];
+          seeds.appendChild(b);
+        }
+        seeds.onclick = function (ev) {
+          var t = ev.target || ev.srcElement;
+          if (t && t.getAttribute && t.getAttribute('data-fp')) render(t.getAttribute('data-fp'), true);
+        };
+        var table = document.getElementById('dims');
+        var html = '<tr><th>维度</th><th>字符</th><th>选项</th></tr>';
+        for (i = 0; i < G.dims.length; i++) {
+          var d = G.dims[i];
+          var names = [];
+          var j;
+          for (j = 0; j < d.options.length; j++) names.push(d.options[j].name);
+          html += '<tr><td>' + d.label + '</td><td>' + d.chars + '</td><td>' + d.options.length + ' · ' + names.join('、') + '</td></tr>';
+        }
+        table.innerHTML = html;
+      }
+      document.getElementById('form').onsubmit = function (ev) {
+        if (ev && ev.preventDefault) ev.preventDefault();
+        render(document.getElementById('fp').value, true);
+        return false;
+      };
+      if (param('shot') === '1') document.body.className = 'shot';
+      fillTools();
+      var initial = param('fp') || 'B665-6G14-RPME';
+      document.getElementById('fp').value = initial;
+      render(initial, true);
+    })();
+  </script>
+</body>
+</html>
