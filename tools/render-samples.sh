@@ -1,7 +1,15 @@
 #!/bin/bash
 # 用本机 Chrome 把 preview.html?shot=1 截成 samples/*.png。不联网。
 # 无头 Chrome 有时截完不退出，所以用 timeout；退出码 124 只要文件写出来就算成功。
+#
+# 用户已否决当前引擎产出的全部 samples（裁切、衔接、叉腰）。
+# 引擎 samples 已清空，等待用户审过的定稿再放入。
+# 默认拒绝写回 samples/，避免把否决样张再次提交。
 set -euo pipefail
+if [ "${SAMPLE_RENDER_APPROVED:-}" != "1" ]; then
+  echo "refusing to write samples/*.png: engine renders were rejected. Set SAMPLE_RENDER_APPROVED=1 only after the user approves a final." >&2
+  exit 1
+fi
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$ROOT/samples"
 mkdir -p "$OUT"
