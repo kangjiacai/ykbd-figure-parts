@@ -41,7 +41,7 @@ var rules = [
 ];
 
 var bannedWord = '冷' + '知识';
-var bannedPhrases = [bannedWord, '本局卡', '指纹名', '仅此一局'];
+var bannedPhrases = [bannedWord, '本局卡', '指纹名', '仅此一局', '本局限定', '指纹小人', '示意稿'];
 var fails = [];
 
 function hasBanned(text) {

@@ -1,11 +1,12 @@
-/* 部件拼装式全身简笔小人。种子是指纹码（如 B665-6G14-RPME）。
+/* 部件拼装式全身形象。种子是指纹码（如 B665-6G14-RPME）。
  * 去连字符后 12 个字符分段，互不混用：
  *   0-1 发型(12)  2-3 眼睛(10)  4-5 嘴(10)  6 衣服(8)
  *   7 四肢姿势(8)  8-9 主色(8)  10 强调色(8)  11 配件(8)
  * 同一种子永远同一形象。绘制过程没有随机数。
  * 图层固定：后发 → 身体 → 脖子 → 头（含耳）→ 前发刘海 → 五官。
  * 长发/披肩发的后发片在身体后面，两侧从肩后露出，不夹在头和衣领之间。
- * 绘制全部自绘（圆、圆角矩形、折线），Chrome 61 / ES5。
+ * 画风对齐 B3 定稿：干净头型、耳鼻眉与腮红、衣服有领口/扣/袋/帽绳、鞋有鞋底、四肢是有体积的色块。
+ * 绘制全部自绘（圆、椭圆、圆角矩形、折线），Chrome 61 / ES5。
  * 若已加载 js/fingerprint.js，会把 F.avatarSVG / F.drawAvatar 指到本引擎。
  */
 (function () {
@@ -159,7 +160,10 @@
   ];
   var SKIN = ['#F6D2B6', '#F0C09A', '#E2A87C', '#D09060', '#C07C48', '#A56840', '#8D5A3A', '#F8E0CE'];
   var PANTS = '#242B38';
-  var EARS = { short: 1, side: 1, bun: 1, twin: 1, pony: 1, spiky: 1, buzz: 1, swoop: 1 };
+  var EARS = {
+    bob: 1, short: 1, side: 1, bun: 1, twin: 1, long: 1, pony: 1,
+    shoulder: 1, spiky: 1, buzz: 1, swoop: 1
+  };
 
   function fnv(str) {
     var h = 0x811c9dc5;
@@ -198,6 +202,26 @@
     if (mainFill === '#C9B8FF') return '#C8F542';
     return '#C9B8FF';
   }
+  /* 四字合成名：前词 + 后词，只由规范化后的 12 位码决定。 */
+  var NAME_L = [
+    '盐巴', '雾窗', '纸鹤', '月光', '晴天', '晚风', '海盐', '青苔',
+    '薄荷', '电台', '松果', '信笺', '麦芽', '果酱', '码头', '蝉鸣',
+    '暖桌', '纸船', '柠檬', '夜航', '糖纸', '雨巷', '青柠', '候鸟',
+    '潮汐', '绒线', '晨雾', '桃核', '风铃', '银杏', '云朵', '星子'
+  ];
+  var NAME_R = [
+    '气球', '火柴', '汽水', '拉面', '板栗', '灯塔', '柚子', '邮戳',
+    '饼干', '墨水', '柳絮', '炉火', '雪松', '琴键', '藤蔓', '贝壳',
+    '麦浪', '灯芯', '霜糖', '茶渍', '枫糖', '橘瓣', '苇岸', '瓷杯',
+    '线团', '露台', '热汤', '铁盒', '蜡笔', '毛线', '船票', '布丁'
+  ];
+  function figureName(raw) {
+    var h = fnv('ykbd-cn-name:' + raw);
+    var left = NAME_L[h % NAME_L.length];
+    h = Math.imul(h ^ (h >>> 16), 0x7feb352d) >>> 0;
+    return left + NAME_R[h % NAME_R.length];
+  }
+
   function pub(list) {
     var out = [];
     for (var i = 0; i < list.length; i++) out.push({ id: list[i].id, name: list[i].name });
@@ -248,6 +272,7 @@
         shoe: detail
       },
       sleeve: sleeve,
+      displayName: figureName(raw),
       cardLine: HAIR[hi].name + ' · ' + EYES[ei].name + ' · ' + BODY[bi].name + ' · ' + POSE[pi].name
     };
   }
@@ -269,6 +294,29 @@
     }
     return pts;
   }
+  function ellArc(cx, cy, rx, ry, a0, a1, steps) {
+    var pts = [];
+    var i;
+    for (i = 0; i <= steps; i++) {
+      var t = a0 + (a1 - a0) * (i / steps);
+      pts.push([cx + Math.cos(t) * rx, cy + Math.sin(t) * ry]);
+    }
+    return pts;
+  }
+  function limbPoly(a, b, half) {
+    var dx = b[0] - a[0];
+    var dy = b[1] - a[1];
+    var len = Math.sqrt(dx * dx + dy * dy);
+    if (len < 0.01) len = 0.01;
+    var px = -dy / len * half;
+    var py = dx / len * half;
+    return [
+      [a[0] + px, a[1] + py],
+      [b[0] + px, b[1] + py],
+      [b[0] - px, b[1] - py],
+      [a[0] - px, a[1] - py]
+    ];
+  }
   function Crc(cx, cy, r, fill, stroke, sw, ox) {
     return { op: 'circle', cx: cx + (ox || 0), cy: cy, r: r, fill: fill || 'none', stroke: stroke || 'none', sw: sw || 0 };
   }
@@ -285,229 +333,334 @@
     for (i = 0; i < pts.length; i++) p.push([pts[i][0] + o, pts[i][1]]);
     return { op: 'poly', pts: p, close: close ? true : false, fill: fill || 'none', stroke: stroke || 'none', sw: sw || 0 };
   }
-  function trap(top, bot, y, h, ox) {
+  function torso(topW, botW, y, h) {
+    var r = 14;
     return [
-      [CX - top / 2 + (ox || 0), y],
-      [CX + top / 2 + (ox || 0), y],
-      [CX + bot / 2 + (ox || 0), y + h],
-      [CX - bot / 2 + (ox || 0), y + h]
+      [CX - topW / 2 + r, y],
+      [CX + topW / 2 - r, y],
+      [CX + topW / 2, y + 10],
+      [CX + botW / 2, y + h - r],
+      [CX + botW / 2 - 8, y + h],
+      [CX - botW / 2 + 8, y + h],
+      [CX - botW / 2, y + h - r],
+      [CX - topW / 2, y + 10]
     ];
   }
-  function band(top, bot, y, h, y0, y1, ox) {
-    var t0 = (y0 - y) / h;
-    var t1 = (y1 - y) / h;
-    var w0 = top + (bot - top) * t0;
-    var w1 = top + (bot - top) * t1;
-    var o = ox || 0;
+  function flare(topW, botW, y, h) {
     return [
-      [CX - w0 / 2 + o, y0],
-      [CX + w0 / 2 + o, y0],
-      [CX + w1 / 2 + o, y1],
-      [CX - w1 / 2 + o, y1]
+      [CX - topW / 2 + 12, y],
+      [CX + topW / 2 - 12, y],
+      [CX + topW / 2, y + 12],
+      [CX + botW / 2, y + h - 8],
+      [CX + botW / 2 - 10, y + h],
+      [CX - botW / 2 + 10, y + h],
+      [CX - botW / 2, y + h - 8],
+      [CX - topW / 2, y + 12]
     ];
   }
 
   function buildShapes(model) {
     var shapes = [];
-    function put(part, sh) { sh.part = part; shapes.push(sh); }
+    function put(part, sh) { sh.part = part; shapes.push(sh); return sh; }
     var C = model.colors;
     var ox = model.pose.ox || 0;
     var hair = model.hair.id;
     var body = model.body.id;
     var pose = model.pose;
+    var eyeY = 110;
+    var mouthY = 136;
 
-    function putBack(sh) { put('hairBack', sh); }
-    function putFront(sh) { put('hairFront', sh); }
+    function putBack(sh) { return put('hairBack', sh); }
+    function putFront(sh) { return put('hairFront', sh); }
 
-    /* 1. 后发。长发/披肩发从肩线起、比衣服宽，中段被下一步的身体盖住。 */
-    if (hair === 'bob') {
-      putBack(Crc(CX, 92, 58, INK, INK, 5, ox));
-      putBack(RR(96, 108, 32, 36, 14, INK, INK, 5, ox));
-      putBack(RR(192, 108, 32, 36, 14, INK, INK, 5, ox));
-    } else if (hair === 'long' || hair === 'shoulder') {
-      putBack(Crc(CX, 90, 56, INK, INK, 5, ox));
-      var sheetBot = hair === 'long' ? 274 : 226;
-      var topHalf = hair === 'long' ? 86 : 78;
-      var botHalf = hair === 'long' ? 104 : 92;
-      putBack(Py([
-        [CX - topHalf, 182],
-        [CX + topHalf, 182],
-        [CX + botHalf, sheetBot],
-        [CX - botHalf, sheetBot]
-      ], true, INK, INK, 5, ox));
-    } else if (hair === 'afro') {
-      putBack(Ell(CX, 88, 80, 48, INK, INK, 5, ox));
+    /* 1. 后发。长发片比身体宽，中间被下一步的衣服盖住，两侧从肩后露出。 */
+    if (hair === 'afro') {
+      var puffs = [[160, 50, 34], [116, 74, 26], [204, 74, 26], [122, 112, 22], [198, 112, 22], [160, 34, 18]];
+      var pi;
+      for (pi = 0; pi < puffs.length; pi++) putBack(Crc(puffs[pi][0], puffs[pi][1], puffs[pi][2], INK, INK, 4, ox));
     } else if (hair === 'buzz') {
-      putBack(Crc(CX, 78, 40, INK, INK, 4, ox));
-    } else {
-      putBack(Crc(CX, hair === 'short' ? 80 : 88, hair === 'spiky' ? 50 : 52, INK, INK, 5, ox));
-    }
-    if (hair === 'pony') {
-      putBack(Py([[206, 74], [252, 116], [240, 190]], false, 'none', INK, 16, ox));
-    }
-    if (hair === 'spiky') {
+      putBack(Ell(CX, 46, 38, 14, INK, INK, 4, ox));
+    } else if (hair === 'short') {
+      putBack(Ell(CX, 50, 46, 16, INK, INK, 4, ox));
+    } else if (hair === 'spiky') {
+      putBack(Ell(CX, 72, 46, 26, INK, INK, 4, ox));
       var spikes = [
-        [160, 26, 146, 68, 174, 68],
-        [122, 44, 108, 84, 140, 76],
-        [198, 44, 180, 76, 214, 84],
-        [104, 70, 94, 102, 126, 96],
-        [216, 70, 194, 96, 228, 102]
+        [160, 28, 144, 70, 176, 70],
+        [124, 46, 108, 84, 142, 76],
+        [196, 46, 178, 76, 214, 84],
+        [108, 72, 96, 104, 130, 96],
+        [212, 72, 190, 96, 226, 104]
       ];
       var si;
       for (si = 0; si < spikes.length; si++) {
-        var s = spikes[si];
-        putBack(Py([[s[0], s[1]], [s[2], s[3]], [s[4], s[5]]], true, INK, INK, 4, ox));
+        var sp = spikes[si];
+        putBack(Py([[sp[0], sp[1]], [sp[2], sp[3]], [sp[4], sp[5]]], true, INK, INK, 4, ox));
       }
+    } else {
+      putBack(Ell(CX, 76, 56, 42, INK, INK, 4, ox));
+    }
+    if (hair === 'bob') {
+      putBack(Ell(CX - 46, 126, 16, 28, INK, INK, 4, ox));
+      putBack(Ell(CX + 46, 126, 16, 28, INK, INK, 4, ox));
+    }
+    if (hair === 'long' || hair === 'shoulder') {
+      var sheetBot = hair === 'long' ? 300 : 232;
+      function sideLock(sign) {
+        return [
+          [CX + sign * 64, 150],
+          [CX + sign * 50, 158],
+          [CX + sign * 46, 220],
+          [CX + sign * 52, sheetBot],
+          [CX + sign * 74, sheetBot - 4],
+          [CX + sign * 80, 214],
+          [CX + sign * 76, 154]
+        ];
+      }
+      putBack(Py(sideLock(-1), true, INK, INK, 4, ox));
+      putBack(Py(sideLock(1), true, INK, INK, 4, ox));
+      put('hairBack', Py([[CX - 90, 188], [CX - 98, sheetBot - 36]], false, 'none', '#FFFFFF', 3, ox)).opac = 0.4;
+      put('hairBack', Py([[CX + 90, 188], [CX + 98, sheetBot - 36]], false, 'none', '#FFFFFF', 3, ox)).opac = 0.4;
+    }
+    if (hair === 'pony') {
+      putBack(Py([
+        [206, 78],
+        [232, 86],
+        [252, 118],
+        [246, 176],
+        [228, 198],
+        [214, 170],
+        [220, 124],
+        [198, 96]
+      ], true, INK, INK, 4, ox));
     }
 
-    /* 2. 身体、衣服、四肢。连帽檐也在头和脖子之前，所以落在脑后。 */
     if (body === 'hoodie' && hair !== 'afro') {
-      put('hood', Py(arcPts(CX, 104, 66, Math.PI * 1.08, Math.PI * 1.92, 16), false, 'none', INK, 22, ox));
-      put('hood', Py(arcPts(CX, 104, 66, Math.PI * 1.08, Math.PI * 1.92, 16), false, 'none', C.main, 12, ox));
+      put('hood', Py([
+        [CX - 64, 156],
+        [CX - 56, 72],
+        [CX - 22, 40],
+        [CX, 34],
+        [CX + 22, 40],
+        [CX + 56, 72],
+        [CX + 64, 156],
+        [CX + 36, 170],
+        [CX - 36, 170]
+      ], true, C.main, INK, 5, ox));
     }
 
+    function drawShoe(foot) {
+      var x = foot[0];
+      var y = foot[1];
+      put('shoe', RR(x - 15, y - 14, 30, 13, 5, C.shoe, INK, 3.5, 0));
+      put('shoeStripe', RR(x - 8, y - 11, 16, 3, 1.5, C.accent, 'none', 0, 0));
+      put('sole', RR(x - 17, y - 3, 34, 8, 3, WHITE, INK, 3, 0));
+    }
+    function over(a, b, extra) {
+      var dx = b[0] - a[0];
+      var dy = b[1] - a[1];
+      var len = Math.sqrt(dx * dx + dy * dy);
+      if (len < 0.01) len = 0.01;
+      return [b[0] + dx / len * extra, b[1] + dy / len * extra];
+    }
+    function behind(a, b, extra) {
+      var dx = b[0] - a[0];
+      var dy = b[1] - a[1];
+      var len = Math.sqrt(dx * dx + dy * dy);
+      if (len < 0.01) len = 0.01;
+      return [a[0] - dx / len * extra, a[1] - dy / len * extra];
+    }
     function drawLeg(hip, knee, foot) {
-      var startY = hip[1];
-      if (body === 'dress') startY = 230;
-      put('leg', Py([[hip[0], startY], knee, [foot[0], foot[1] - 2]], false, 'none', INK, 22, 0));
-      put('legFill', Py([[hip[0], startY], knee, [foot[0], foot[1] - 2]], false, 'none', C.pants, 14, 0));
-      put('shoe', RR(foot[0] - 15, foot[1] - 4, 30, 15, 6, C.shoe, INK, 4, 0));
+      var hpt = [hip[0], body === 'dress' ? 220 : hip[1]];
+      var root = behind(hpt, knee, 18);
+      put('leg', Py(limbPoly(knee, foot, 9), true, C.pants, INK, 4, 0));
+      put('leg', Py(limbPoly(root, over(hpt, knee, 8), 12), true, C.pants, INK, 4, 0));
+      drawShoe(foot);
     }
     drawLeg(pose.lhip, pose.lk, pose.lf);
     drawLeg(pose.rhip, pose.rk, pose.rf);
 
-    var topW = 104, botW = 136, ty = 180, th = 76;
-    if (body === 'dress') { topW = 108; botW = 176; th = 50; }
-    var shirtFill = C.main;
-    if (body === 'overalls') shirtFill = C.detail;
-    if (body === 'vest') shirtFill = C.detail;
-    put('body', Py(trap(topW, botW, ty, th, ox), true, shirtFill, INK, 5, 0));
+    var shirt = C.main;
+    if (body === 'overalls' || body === 'vest') shirt = C.detail;
+    var cloth = body === 'dress' ? flare(104, 168, 178, 54) : torso(112, 136, 178, 78);
+    put('body', Py(cloth, true, shirt, INK, 5, ox));
+
+    function crew(y) {
+      return [
+        [CX - 22, y], [CX - 14, y + 8], [CX - 6, y + 12], [CX, y + 14],
+        [CX + 6, y + 12], [CX + 14, y + 8], [CX + 22, y]
+      ];
+    }
+    function buttons(x, ys) {
+      var bi;
+      for (bi = 0; bi < ys.length; bi++) put('button', Crc(x, ys[bi], 3.5, INK, 'none', 0, ox));
+    }
+    function pocketAt(x, y, w, h) {
+      put('pocket', RR(x, y, w, h, 5, 'none', INK, 3, ox));
+      put('pocket', Py([[x + 2, y + 6], [x + w - 2, y + 6]], false, 'none', INK, 2.5, ox));
+    }
+
     if (body === 'stripes') {
-      put('stripe', Py(band(topW, botW, ty, th, 192, 206, ox), true, C.detail, 'none', 0, 0));
-      put('stripe', Py(band(topW, botW, ty, th, 214, 228, ox), true, C.detail, 'none', 0, 0));
-      put('stripe', Py(band(topW, botW, ty, th, 236, 250, ox), true, C.detail, 'none', 0, 0));
-      put('body', Py(trap(topW, botW, ty, th, ox), true, 'none', INK, 5, 0));
-    }
-    if (body === 'vest') {
-      put('body', Py(trap(topW - 8, botW - 16, ty + 8, th - 10, ox), true, C.main, INK, 5, 0));
-      put('body', Py([[CX - 18, ty + 6], [CX + 18, ty + 6], [CX, ty + 58]], true, C.detail, INK, 4, ox));
-    }
-    if (body === 'overalls') {
-      put('body', RR(134, 206, 52, 48, 8, C.main, INK, 5, ox));
-      put('body', Crc(CX, 222, 3.2, INK, 'none', 0, ox));
-      put('body', Crc(CX, 236, 3.2, INK, 'none', 0, ox));
-    }
-    if (body === 'sweater') {
-      var ribY = [232, 246];
-      var ri;
-      for (ri = 0; ri < ribY.length; ri++) {
-        var ln = band(topW, botW, ty, th, ribY[ri], ribY[ri], ox);
-        put('body', Py([[ln[0][0] + 10, ribY[ri]], [ln[1][0] - 10, ribY[ri]]], false, 'none', C.deep, 4, 0));
+      var bandY = [200, 218, 236];
+      var byi;
+      for (byi = 0; byi < bandY.length; byi++) {
+        var y0 = bandY[byi];
+        var t0 = (y0 - 178) / 78;
+        var half = (112 + (136 - 112) * t0) / 2 - 14;
+        put('stripe', Py([
+          [CX - half, y0], [CX + half, y0], [CX + half, y0 + 9], [CX - half, y0 + 9]
+        ], true, C.detail, 'none', 0, ox));
       }
-    }
-    if (body === 'hoodie') {
-      put('body', RR(136, 210, 48, 28, 8, C.detail, INK, 4, ox));
+      put('body', Py(cloth, true, 'none', INK, 5, ox));
+      put('collar', Py(crew(182), false, 'none', INK, 4, ox));
+    } else if (body === 'tee') {
+      put('collar', Py(crew(182), false, 'none', INK, 4, ox));
+      buttons(CX, [204, 220]);
+      pocketAt(CX + 16, 208, 26, 20);
+    } else if (body === 'sweater') {
+      put('collar', Py(crew(180), false, 'none', INK, 5, ox));
+      put('collar', Py(crew(188), false, 'none', C.deep, 3, ox));
+      put('body', Py([[CX - 42, 242], [CX + 42, 242]], false, 'none', C.deep, 4, ox));
+      put('body', Py([[CX - 44, 250], [CX + 44, 250]], false, 'none', C.deep, 4, ox));
+    } else if (body === 'shirt') {
+      put('collar', Py([[CX - 18, 180], [CX - 4, 180], [CX - 12, 202]], true, WHITE, INK, 3, ox));
+      put('collar', Py([[CX + 18, 180], [CX + 4, 180], [CX + 12, 202]], true, WHITE, INK, 3, ox));
+      put('body', Py([[CX, 198], [CX, 248]], false, 'none', INK, 3, ox));
+      buttons(CX, [206, 222, 238]);
+      pocketAt(CX + 16, 210, 24, 18);
+    } else if (body === 'overalls') {
+      put('body', RR(CX - 30, 198, 60, 52, 8, C.main, INK, 4, ox));
+      put('body', Py([[CX - 26, 180], [CX - 16, 202]], false, 'none', INK, 8, ox));
+      put('body', Py([[CX - 26, 180], [CX - 16, 202]], false, 'none', C.main, 4, ox));
+      put('body', Py([[CX + 26, 180], [CX + 16, 202]], false, 'none', INK, 8, ox));
+      put('body', Py([[CX + 26, 180], [CX + 16, 202]], false, 'none', C.main, 4, ox));
+      buttons(CX - 16, [204]);
+      buttons(CX + 16, [204]);
+      pocketAt(CX - 12, 216, 24, 18);
+    } else if (body === 'dress') {
+      put('collar', Py(crew(184), false, 'none', INK, 4, ox));
+      put('button', Crc(CX, 200, 3.6, C.accent, INK, 2, ox));
+      put('body', Py([[CX - 62, 224], [CX + 62, 224]], false, 'none', INK, 4, ox));
+    } else if (body === 'hoodie') {
+      put('collar', Py(crew(184), false, 'none', INK, 4, ox));
+      put('hood', Py([[CX - 10, 196], [CX - 14, 218]], false, 'none', INK, 3, ox));
+      put('hood', Py([[CX + 10, 196], [CX + 14, 218]], false, 'none', INK, 3, ox));
+      put('hood', Crc(CX - 14, 220, 4.5, C.accent, INK, 2.5, ox));
+      put('hood', Crc(CX + 14, 220, 4.5, C.accent, INK, 2.5, ox));
+      put('pocket', RR(CX - 30, 224, 60, 26, 8, C.deep, INK, 3.5, ox));
+      put('pocket', Py([[CX - 22, 230], [CX + 22, 230]], false, 'none', INK, 3, ox));
+    } else if (body === 'vest') {
+      put('body', Py(torso(96, 118, 190, 64), true, C.main, INK, 4, ox));
+      put('body', Py([[CX, 198], [CX, 246]], false, 'none', INK, 3, ox));
+      buttons(CX - 8, [210, 228]);
+      pocketAt(CX + 10, 214, 22, 16);
     }
 
-    if (body === 'overalls') {
-      put('body', Py([[132, 184], [148, 214]], false, 'none', INK, 10, ox));
-      put('body', Py([[132, 184], [148, 214]], false, 'none', C.main, 5, ox));
-      put('body', Py([[188, 184], [172, 214]], false, 'none', INK, 10, ox));
-      put('body', Py([[188, 184], [172, 214]], false, 'none', C.main, 5, ox));
+    var upper = C.main;
+    var lower = C.main;
+    if (model.sleeve === 'bare') { upper = C.skin; lower = C.skin; }
+    else if (model.sleeve === 'short') {
+      upper = body === 'overalls' ? C.detail : C.main;
+      lower = C.skin;
     }
-    if (body === 'shirt') {
-      put('collar', Py([[146, 180], [166, 180], [156, 204]], true, WHITE, INK, 4, ox));
-      put('collar', Py([[174, 180], [154, 180], [164, 204]], true, WHITE, INK, 4, ox));
-      put('body', Crc(CX, 206, 3.4, INK, 'none', 0, ox));
-      put('body', Crc(CX, 220, 3.4, INK, 'none', 0, ox));
-      put('body', Crc(CX, 234, 3.4, INK, 'none', 0, ox));
-    }
-    if (body === 'hoodie') {
-      put('hood', Py([[150, 186], [142, 210]], false, 'none', INK, 3, ox));
-      put('hood', Py([[170, 186], [178, 210]], false, 'none', INK, 3, ox));
-      put('hood', Crc(142, 210, 3.5, C.detail, INK, 2, ox));
-      put('hood', Crc(178, 210, 3.5, C.detail, INK, 2, ox));
-    }
-
-    /* 四肢画在衣服之后、脖子之前，举手时手在头的两侧仍可见。 */
-    function armColors() {
-      if (model.sleeve === 'bare') return { upper: C.skin, lower: C.skin };
-      if (model.sleeve === 'short') return { upper: body === 'overalls' ? C.detail : C.main, lower: C.skin };
-      return { upper: C.main, lower: C.main };
-    }
-    var ac = armColors();
     function drawArm(s, e, h) {
-      put('arm', Py([s, e, h], false, 'none', INK, 20, ox));
-      put('armFill', Py([s, e, h], false, 'none', ac.lower, 12, ox));
-      if (ac.upper !== ac.lower) {
-        var mid = [e[0] + (h[0] - e[0]) * 0.2, e[1] + (h[1] - e[1]) * 0.2];
-        put('arm', Py([s, e, mid], false, 'none', INK, 20, ox));
-        put('armFill', Py([s, e, mid], false, 'none', ac.upper, 12, ox));
+      put('arm', Py(limbPoly(e, h, 9), true, lower, INK, 4, ox));
+      put('arm', Py(limbPoly(behind(s, e, 22), over(s, e, 7), 11), true, upper, INK, 4, ox));
+      if (model.sleeve === 'long') {
+        var t = 0.76;
+        var px = e[0] + (h[0] - e[0]) * t;
+        var py = e[1] + (h[1] - e[1]) * t;
+        var dx = h[0] - e[0];
+        var dy = h[1] - e[1];
+        var len = Math.sqrt(dx * dx + dy * dy);
+        if (len < 0.01) len = 0.01;
+        var nx = -dy / len * 8;
+        var ny = dx / len * 8;
+        put('arm', Py([[px + nx, py + ny], [px - nx, py - ny]], false, 'none', INK, 3, ox));
       }
-      put('hand', Crc(h[0], h[1], 8, C.skin, INK, 4, ox));
+      put('hand', Crc(h[0], h[1], 9, C.skin, INK, 3.5, ox));
     }
     drawArm(pose.ls, pose.le, pose.lh);
     drawArm(pose.rs, pose.re, pose.rh);
 
-    /* 3. 脖子：画在衣服之后，头与衣领之间留下一截肤色。 */
+    /* 3. 脖子画在衣服之后，采样点保持肤色。 */
     put('neck', RR(CX - 15, 154, 30, 28, 8, C.skin, INK, 4, ox));
 
-    /* 4. 头 */
+    /* 4. 头。耳廓先画，头填色盖住内半，耳窝在头之后补上。 */
     if (EARS[hair]) {
-      put('ear', Crc(106, 112, 10, C.skin, INK, 4, ox));
-      put('ear', Crc(214, 112, 10, C.skin, INK, 4, ox));
+      put('ear', Crc(110, 112, 12, C.skin, INK, 3.5, ox));
+      put('ear', Crc(210, 112, 12, C.skin, INK, 3.5, ox));
     }
-    put('head', Crc(CX, 102, 54, C.skin, 'none', 0, ox));
-    if (hair === 'buzz') {
-      put('head', Crc(CX, 102, 54, 'none', INK, 5, ox));
-    } else {
-      put('head', Py(arcPts(CX, 102, 54, 0.05 * Math.PI, 0.95 * Math.PI, 18), false, 'none', INK, 5, ox));
+    put('head', Ell(CX, 102, 50, 54, C.skin, INK, 5, ox));
+    if (EARS[hair]) {
+      put('ear', Py([[100, 106], [105, 112], [100, 118]], false, 'none', INK, 2.4, ox));
+      put('ear', Py([[220, 106], [215, 112], [220, 118]], false, 'none', INK, 2.4, ox));
     }
 
-    /* 5. 前发。只有带刘海/前发的发型才把额发盖到眉上；短发等可以露额。 */
-    if (model.hair.type === 'bangs') putFront(RR(CX - 52, 54, 104, 36, 12, INK, INK, 4, ox));
-    if (hair === 'bun') putFront(Crc(CX, 40, 18, INK, INK, 5, ox));
-    if (hair === 'twin') {
-      putFront(Crc(112, 58, 16, INK, INK, 5, ox));
-      putFront(Crc(208, 58, 16, INK, INK, 5, ox));
+    /* 5. 前发。bangs 盖到眉上；short / crop 只占头顶，露出额头。 */
+    if (model.hair.type === 'bangs') {
+      putFront(Py([
+        [106, 44], [214, 44], [218, 66], [206, 82], [184, 86],
+        [160, 90], [136, 86], [114, 82], [102, 66]
+      ], true, INK, INK, 4, ox));
+      put('hairFront', Py([[134, 54], [156, 48], [174, 54]], false, 'none', '#FFFFFF', 3, ox)).opac = 0.55;
     }
-    if (hair === 'pony') putFront(Crc(236, 100, 7, C.detail, INK, 3, ox));
     if (hair === 'side') {
-      putFront(Py([[198, 88], [176, 52], [116, 46], [104, 84], [128, 96], [170, 88]], true, INK, INK, 5, ox));
+      putFront(Py([[108, 70], [146, 58], [164, 76], [148, 90], [118, 94], [100, 78]], true, INK, INK, 4, ox));
     }
     if (hair === 'swoop') {
-      putFront(Py([[116, 92], [134, 52], [178, 40], [222, 70], [204, 96], [150, 90]], true, INK, INK, 5, ox));
+      putFront(Py([[156, 64], [196, 48], [224, 74], [208, 94], [176, 86], [158, 74]], true, INK, INK, 4, ox));
     }
+    if (hair === 'bun') {
+      putFront(Crc(CX, 36, 16, INK, INK, 4, ox));
+      putFront(Py([[CX - 10, 36], [CX + 10, 36]], false, 'none', C.detail, 4, ox));
+    }
+    if (hair === 'twin') {
+      putFront(Crc(114, 60, 14, INK, INK, 4, ox));
+      putFront(Crc(206, 60, 14, INK, INK, 4, ox));
+      putFront(Crc(114, 60, 5, C.detail, INK, 2, ox));
+      putFront(Crc(206, 60, 5, C.detail, INK, 2, ox));
+    }
+    if (hair === 'pony') putFront(Crc(224, 96, 6, C.detail, INK, 2.5, ox));
     if (hair === 'buzz') {
-      var ticks = [[146, 48, 146, 64], [160, 44, 160, 62], [174, 48, 174, 64]];
-      var ti;
-      for (ti = 0; ti < ticks.length; ti++) {
-        var tk = ticks[ti];
-        putFront(Py([[tk[0], tk[1]], [tk[2], tk[3]]], false, 'none', INK, 4, ox));
-      }
+      putFront(Ell(CX, 52, 42, 16, INK, INK, 4, ox));
+      put('hairFront', Py([[146, 42], [160, 38], [172, 44]], false, 'none', '#FFFFFF', 2.5, ox)).opac = 0.5;
     }
+    if (hair === 'short') {
+      putFront(Ell(CX, 50, 46, 15, INK, INK, 4, ox));
+      putFront(Crc(140, 36, 8, INK, INK, 3, ox));
+      putFront(Crc(178, 34, 7, INK, INK, 3, ox));
+      putFront(Py([[156, 40], [150, 56]], false, 'none', C.skin, 3, ox));
+    }
+    if (hair === 'spiky') putFront(Ell(CX, 54, 34, 12, INK, INK, 3, ox));
 
-    drawEyes(model.eyes.id, ox);
-    drawMouth(model.mouth.id, ox, C);
-    drawAccessory(model.accessory.id, ox, C);
+    if (model.eyes.id !== 'brow') {
+      put('brow', Py([[126, 100], [138, 94], [150, 100]], false, 'none', INK, 3.2, ox));
+      put('brow', Py([[170, 100], [182, 94], [194, 100]], false, 'none', INK, 3.2, ox));
+    }
+    drawEyes(model.eyes.id);
+    put('nose', Py([[156, 122], [164, 122], [160, 132]], true, INK, 'none', 0, ox));
+    drawMouth(model.mouth.id);
+    put('blush', Ell(126, 126, 10, 6.5, '#C8F542', 'none', 0, ox));
+    put('blush', Ell(194, 126, 10, 6.5, '#C8F542', 'none', 0, ox));
+    drawAccessory(model.accessory.id);
     return shapes;
 
-    function drawEyes(id, o) {
-      var y = 100;
+    function drawEyes(id) {
+      var y = eyeY;
       var x1 = 138;
       var x2 = 182;
-      function lens(x, w, h, fill) {
-        put('eye', RR(x, y - 12, w, h, 4, fill, INK, 4, o));
+      function pupil(x) {
+        put('eye', Crc(x + 1, y + 1, 5.6, INK, 'none', 0, ox));
+        put('eye', Crc(x + 3, y - 1.5, 2, WHITE, 'none', 0, ox));
       }
-      function pupil(x) { put('eye', Crc(x, y + 1, 3.6, INK, 'none', 0, o)); }
       if (id === 'rect' || id === 'sun') {
-        var fill = id === 'sun' ? '#1A1A1A' : WHITE;
-        lens(122, 32, 24, fill);
-        lens(166, 32, 24, fill);
-        put('eye', Py([[154, y], [166, y]], false, 'none', INK, 4, o));
+        var lens = id === 'sun' ? '#1A1A1A' : WHITE;
+        put('eye', RR(120, y - 14, 34, 28, 7, lens, INK, 4, ox));
+        put('eye', RR(166, y - 14, 34, 28, 7, lens, INK, 4, ox));
+        put('eye', Py([[154, y], [166, y]], false, 'none', INK, 4, ox));
         if (id === 'sun') {
-          put('eye', RR(126, y - 8, 12, 4, 2, WHITE, 'none', 0, o));
-          put('eye', RR(170, y - 8, 12, 4, 2, WHITE, 'none', 0, o));
+          put('eye', RR(126, y - 8, 16, 5, 2, WHITE, 'none', 0, ox));
+          put('eye', RR(172, y - 8, 16, 5, 2, WHITE, 'none', 0, ox));
         } else {
           pupil(x1);
           pupil(x2);
@@ -515,76 +668,74 @@
         return;
       }
       if (id === 'round') {
-        put('eye', Crc(x1, y, 13, WHITE, INK, 4, o));
-        put('eye', Crc(x2, y, 13, WHITE, INK, 4, o));
-        put('eye', Py([[151, y], [169, y]], false, 'none', INK, 4, o));
+        put('eye', Crc(x1, y, 14, WHITE, INK, 4, ox));
+        put('eye', Crc(x2, y, 14, WHITE, INK, 4, ox));
+        put('eye', Py([[152, y], [168, y]], false, 'none', INK, 4, ox));
         pupil(x1);
         pupil(x2);
         return;
       }
       if (id === 'dot' || id === 'brow') {
-        put('eye', Crc(x1, y, 5, INK, 'none', 0, o));
-        put('eye', Crc(x2, y, 5, INK, 'none', 0, o));
+        put('eye', Crc(x1, y, 5.5, INK, 'none', 0, ox));
+        put('eye', Crc(x2, y, 5.5, INK, 'none', 0, ox));
+        put('eye', Crc(x1 + 1.6, y - 1.6, 1.6, WHITE, 'none', 0, ox));
+        put('eye', Crc(x2 + 1.6, y - 1.6, 1.6, WHITE, 'none', 0, ox));
         if (id === 'brow') {
-          put('brow', Py([[x1 - 14, y - 18], [x1 + 10, y - 12]], false, 'none', INK, 4, o));
-          put('brow', Py([[x2 - 10, y - 16], [x2 + 14, y - 16]], false, 'none', INK, 4, o));
+          put('brow', Py([[x1 - 16, y - 16], [x1 + 6, y - 24]], false, 'none', INK, 3.5, ox));
+          put('brow', Py([[x2 - 8, y - 14], [x2 + 16, y - 14]], false, 'none', INK, 3.5, ox));
         }
         return;
       }
       if (id === 'closed') {
-        put('eye', Py(arcPts(x1, y - 2, 10, 0.2 * Math.PI, 0.8 * Math.PI, 8), false, 'none', INK, 4, o));
-        put('eye', Py(arcPts(x2, y - 2, 10, 0.2 * Math.PI, 0.8 * Math.PI, 8), false, 'none', INK, 4, o));
+        put('eye', Py(arcPts(x1, y + 2, 12, 1.15 * Math.PI, 1.85 * Math.PI, 8), false, 'none', INK, 4, ox));
+        put('eye', Py(arcPts(x2, y + 2, 12, 1.15 * Math.PI, 1.85 * Math.PI, 8), false, 'none', INK, 4, ox));
         return;
       }
       if (id === 'wide' || id === 'square' || id === 'wink') {
         if (id === 'square') {
-          put('eye', RR(x1 - 11, y - 11, 22, 22, 4, WHITE, INK, 4, o));
-          put('eye', RR(x2 - 11, y - 11, 22, 22, 4, WHITE, INK, 4, o));
+          put('eye', RR(x1 - 14, y - 12, 28, 24, 6, WHITE, INK, 3.5, ox));
+          put('eye', RR(x2 - 14, y - 12, 28, 24, 6, WHITE, INK, 3.5, ox));
         } else {
-          put('eye', Ell(x1, y, 12, 14, WHITE, INK, 4, o));
-          if (id === 'wink') {
-            put('eye', Py([[x2 - 12, y], [x2 + 12, y + 2]], false, 'none', INK, 4, o));
-          } else {
-            put('eye', Ell(x2, y, 12, 14, WHITE, INK, 4, o));
-          }
+          put('eye', Ell(x1, y, 13, 12, WHITE, INK, 3.5, ox));
+          if (id === 'wink') put('eye', Py(arcPts(x2, y + 1, 12, 1.2 * Math.PI, 1.85 * Math.PI, 8), false, 'none', INK, 4, ox));
+          else put('eye', Ell(x2, y, 13, 12, WHITE, INK, 3.5, ox));
         }
         pupil(x1);
         if (id !== 'wink') pupil(x2);
         return;
       }
-      /* sleepy */
-      put('eye', Py([[x1 - 13, y], [x1 + 13, y + 2]], false, 'none', INK, 5, o));
-      put('eye', Py([[x2 - 13, y + 2], [x2 + 13, y]], false, 'none', INK, 5, o));
+      put('eye', Py(arcPts(x1, y + 4, 12, 1.08 * Math.PI, 1.92 * Math.PI, 8), false, 'none', INK, 4, ox));
+      put('eye', Py(arcPts(x2, y + 4, 12, 1.08 * Math.PI, 1.92 * Math.PI, 8), false, 'none', INK, 4, ox));
     }
 
-    function drawMouth(id, o, col) {
-      var y = 130;
+    function drawMouth(id) {
+      var y = mouthY;
       var x = CX;
-      if (id === 'line') {
-        put('mouth', Py([[x - 12, y], [x + 12, y]], false, 'none', INK, 4, o));
-      } else if (id === 'smile') {
-        put('mouth', Py(arcPts(x, y - 6, 14, 0.18 * Math.PI, 0.82 * Math.PI, 10), false, 'none', INK, 4, o));
-      } else if (id === 'open') {
-        put('mouth', Ell(x, y + 2, 12, 9, '#1A1A1A', INK, 4, o));
+      if (id === 'line') put('mouth', Py([[x - 12, y], [x + 12, y]], false, 'none', INK, 4, ox));
+      else if (id === 'smile') put('mouth', Py(arcPts(x, y - 6, 14, 0.18 * Math.PI, 0.82 * Math.PI, 10), false, 'none', INK, 4, ox));
+      else if (id === 'open') {
+        put('mouth', Ell(x, y + 2, 12, 9, '#1A1A1A', INK, 3.5, ox));
+        put('mouth', Ell(x, y + 4, 6, 3.5, C.accent, 'none', 0, ox));
       } else if (id === 'o') {
-        put('mouth', Crc(x, y, 7, '#1A1A1A', INK, 4, o));
+        put('mouth', Crc(x, y, 8, '#1A1A1A', INK, 3.5, ox));
+        put('mouth', Crc(x, y + 2, 3.4, C.accent, 'none', 0, ox));
       } else if (id === 'cat') {
-        put('mouth', Py([[x - 12, y - 2], [x - 4, y + 6], [x, y], [x + 4, y + 6], [x + 12, y - 2]], false, 'none', INK, 4, o));
+        put('mouth', Py([[x - 12, y - 2], [x - 4, y + 6], [x, y], [x + 4, y + 6], [x + 12, y - 2]], false, 'none', INK, 4, ox));
       } else if (id === 'down') {
-        put('mouth', Py(arcPts(x, y + 8, 12, 1.2 * Math.PI, 1.8 * Math.PI, 10), false, 'none', INK, 4, o));
+        put('mouth', Py(arcPts(x, y + 8, 12, 1.2 * Math.PI, 1.8 * Math.PI, 10), false, 'none', INK, 4, ox));
       } else if (id === 'smirk') {
-        put('mouth', Py([[x - 4, y + 2], [x + 14, y - 4]], false, 'none', INK, 4, o));
+        put('mouth', Py([[x - 4, y + 2], [x + 14, y - 4]], false, 'none', INK, 4, ox));
       } else if (id === 'teeth') {
-        put('mouth', Ell(x, y + 2, 14, 10, '#1A1A1A', INK, 4, o));
-        put('mouth', RR(x - 10, y - 6, 20, 8, 2, WHITE, 'none', 0, o));
+        put('mouth', Ell(x, y + 2, 14, 10, '#1A1A1A', INK, 3.5, ox));
+        put('mouth', RR(x - 10, y - 6, 20, 8, 2, WHITE, 'none', 0, ox));
       } else if (id === 'wave') {
-        put('mouth', Py([[x - 14, y], [x - 7, y + 5], [x, y], [x + 7, y + 5], [x + 14, y]], false, 'none', INK, 4, o));
-      } else {
-        put('mouth', Crc(x, y, 3.6, INK, 'none', 0, o));
-      }
+        put('mouth', Py([[x - 14, y], [x - 7, y + 5], [x, y], [x + 7, y + 5], [x + 14, y]], false, 'none', INK, 4, ox));
+      } else put('mouth', Crc(x, y, 3.6, INK, 'none', 0, ox));
     }
 
-    function drawAccessory(id, o, col) {
+    function drawAccessory(id) {
+      var col = C;
+      var o = ox;
       if (id === 'none') return;
       if (id === 'pin') {
         put('accessory', RR(196, 68, 20, 9, 3, col.detail, INK, 3, o));
@@ -613,8 +764,8 @@
         return;
       }
       if (id === 'cheek') {
-        put('accessory', Crc(128, 122, 6, col.detail, 'none', 0, o));
-        put('accessory', Crc(192, 122, 6, col.detail, 'none', 0, o));
+        put('accessory', Crc(122, 128, 7, col.detail, INK, 2.5, o));
+        put('accessory', Crc(198, 128, 7, col.detail, INK, 2.5, o));
         return;
       }
       put('accessory', Crc(186, 214, 11, col.detail, INK, 3, o));
@@ -638,6 +789,7 @@
     var stroke = sh.stroke || 'none';
     var sw = sh.sw || 0;
     var common = ' fill="' + fill + '" stroke="' + stroke + '" stroke-width="' + num(sw) + '"';
+    if (sh.opac != null && sh.opac < 1) common += ' opacity="' + num(sh.opac) + '"';
     if (sh.op === 'circle') return '<circle cx="' + num(sh.cx) + '" cy="' + num(sh.cy) + '" r="' + num(sh.r) + '"' + common + '/>';
     if (sh.op === 'ellipse') return '<ellipse cx="' + num(sh.cx) + '" cy="' + num(sh.cy) + '" rx="' + num(sh.rx) + '" ry="' + num(sh.ry) + '"' + common + '/>';
     if (sh.op === 'roundrect') return '<rect x="' + num(sh.x) + '" y="' + num(sh.y) + '" width="' + num(sh.w) + '" height="' + num(sh.h) + '" rx="' + num(sh.rx) + '" ry="' + num(sh.rx) + '"' + common + '/>';
@@ -652,8 +804,8 @@
     var s = Number(size);
     if (!isFinite(s) || s <= 0) s = VIEW;
     var shapes = figureShapes(fp);
-    var h = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + VIEW + ' ' + VIEW + '" width="' + num(s) + '" height="' + num(s) + '" role="img" aria-label="指纹简笔小人" stroke-linecap="round" stroke-linejoin="round">';
-    h += '<title>指纹简笔小人</title>';
+    var h = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + VIEW + ' ' + VIEW + '" width="' + num(s) + '" height="' + num(s) + '" role="img" aria-label="全身形象" stroke-linecap="round" stroke-linejoin="round">';
+    h += '<title>全身形象</title>';
     var i;
     for (i = 0; i < shapes.length; i++) h += svgShape(shapes[i]);
     h += '</svg>';
@@ -708,6 +860,7 @@
     for (i = 0; i < shapes.length; i++) {
       var sh = shapes[i];
       trace(ctx, sh);
+      ctx.globalAlpha = (sh.opac == null || sh.opac >= 1) ? 1 : sh.opac;
       if (sh.fill && sh.fill !== 'none') {
         ctx.fillStyle = sh.fill;
         ctx.fill();
@@ -719,6 +872,7 @@
         ctx.lineWidth = sh.sw;
         ctx.stroke();
       }
+      ctx.globalAlpha = 1;
     }
     ctx.restore();
   }
@@ -737,7 +891,7 @@
     combo: comboCount(),
     HAIR_TYPE: HAIR_TYPE,
     hairs: HAIR,
-    /* 320 画布里的对应位置：眉上约 y=64–90，眼睛 y=100。x 再加 pose.ox。 */
+    /* 采样区仍是额头带 y=64–84、脖子 y=168。刘海下沿约落到 y=80–96，眼睛画在 y=110 附近。x 再加 pose.ox。 */
     zones: {
       neckY: 168,
       neckHalf: 6,

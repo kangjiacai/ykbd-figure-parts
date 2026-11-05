@@ -3,134 +3,182 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>你可能不知道 · 指纹小人</title>
+  <title>你可能不知道 · 形象预览</title>
   <style>
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; }
     body {
       background: #E6E8EC;
-      color: #000;
+      color: #111;
       font-family: "WenQuanYi Micro Hei", "Droid Sans Fallback", "Noto Sans CJK SC", sans-serif;
     }
-    .page { padding: 28px 16px 48px; }
-    .stage { width: 600px; margin: 0 auto; }
+    .page { padding: 18px 16px 48px; }
+    .fit { width: 540px; height: 720px; margin: 0 auto; overflow: hidden; }
+    .sheet {
+      width: 1080px;
+      height: 1440px;
+      background: #E6E8EC;
+      padding: 36px 40px 48px;
+      transform: scale(0.5);
+      transform-origin: top left;
+    }
     .card {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: #C8F542;
+      border: 6px solid #111;
+      border-radius: 40px;
+      box-shadow: 12px 12px 0 #111;
+      overflow: hidden;
+    }
+    .tag {
+      position: absolute;
+      left: 36px;
+      top: 28px;
+      z-index: 3;
       background: #fff;
-      border: 4px solid #000;
-      border-radius: 32px;
-      box-shadow: 10px 10px 0 #000;
-      padding: 22px 22px 18px;
-    }
-    .badge {
-      display: inline-block;
-      background: #C9B8FF;
-      border: 3px solid #000;
+      border: 4px solid #111;
       border-radius: 999px;
-      padding: 6px 14px;
-      font-size: 16px;
-      font-weight: 700;
+      padding: 8px 22px;
+      font-size: 26px;
+      font-weight: 800;
       line-height: 1.2;
+      box-shadow: 5px 5px 0 #111;
+      transform: rotate(-3deg);
     }
-    .panel {
-      margin: 16px 10px 14px 0;
-      background: #D9CCFF;
-      border: 4px solid #000;
+    .dot {
+      position: absolute;
+      right: 64px;
+      top: 108px;
+      width: 132px;
+      height: 132px;
+      border: 6px solid #111;
+      border-radius: 50%;
+      background: #C9B8FF;
+      box-shadow: 8px 8px 0 #111;
+    }
+    .sticker {
+      position: absolute;
+      left: 18px;
+      top: 150px;
+      width: 700px;
+      height: 1040px;
+      background: #fff;
+      border: 6px solid #111;
+      border-radius: 36px;
+      box-shadow: 14px 14px 0 #111;
+      transform: rotate(-6deg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .sticker svg { width: 640px; height: 640px; display: block; }
+    .name {
+      position: absolute;
+      right: 28px;
+      top: 620px;
+      z-index: 3;
+      background: #fff;
+      border: 6px solid #111;
       border-radius: 22px;
-      box-shadow: 8px 8px 0 #000;
+      padding: 18px 28px;
+      box-shadow: 8px 8px 0 #111;
+      transform: rotate(4deg);
+      font-size: 64px;
+      font-weight: 900;
+      line-height: 1.15;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
     }
-    .panel svg { display: block; width: 100%; height: auto; }
-    .code {
-      margin: 14px 0 0;
-      text-align: center;
-      font-size: 28px;
-      font-weight: 700;
-      letter-spacing: 1px;
+    .stamp {
+      position: absolute;
+      right: 36px;
+      bottom: 42px;
+      z-index: 3;
+      background: #C9B8FF;
+      border: 5px solid #111;
+      border-radius: 16px;
+      padding: 12px 16px;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
       line-height: 1.2;
+      box-shadow: 6px 6px 0 #111;
+      transform: rotate(-2deg);
     }
-    .meta {
-      margin: 6px 0 0;
-      min-height: 44px;
-      text-align: center;
-      font-size: 16px;
-      font-weight: 700;
-      line-height: 22px;
-      white-space: pre-line;
-    }
-    .foot {
-      margin: 8px 0 0;
-      text-align: center;
-      color: #5E6872;
-      font-size: 13px;
-      line-height: 1.4;
-    }
-    .tools { width: 600px; margin: 22px auto 0; }
+    .tools { width: 540px; margin: 18px auto 0; }
     h1 { font-size: 20px; margin: 0 0 8px; }
     p.lead { margin: 0 0 12px; font-size: 14px; line-height: 1.5; }
     form { margin: 0 0 12px; }
     input[type="text"] {
       font-family: inherit;
       font-size: 16px;
-      border: 3px solid #000;
+      border: 3px solid #111;
       border-radius: 10px;
       padding: 8px 10px;
       width: 280px;
-      box-shadow: 3px 3px 0 #000;
+      box-shadow: 3px 3px 0 #111;
       background: #fff;
     }
     button.btn {
       font-family: inherit;
       font-size: 16px;
       font-weight: 700;
-      border: 3px solid #000;
+      border: 3px solid #111;
       border-radius: 10px;
       padding: 8px 14px;
       margin: 0 0 0 8px;
       background: #C8F542;
-      box-shadow: 3px 3px 0 #000;
+      box-shadow: 3px 3px 0 #111;
       cursor: pointer;
     }
     .seeds { margin: 0 0 14px; }
     button.seed {
       font-family: inherit;
       font-size: 13px;
-      border: 3px solid #000;
+      border: 3px solid #111;
       border-radius: 999px;
       padding: 4px 10px;
       margin: 0 8px 8px 0;
       background: #fff;
-      box-shadow: 2px 2px 0 #000;
+      box-shadow: 2px 2px 0 #111;
       cursor: pointer;
     }
     table { border-collapse: collapse; width: 100%; font-size: 13px; background: #fff; }
-    th, td { border: 2px solid #000; padding: 4px 6px; text-align: left; vertical-align: top; }
+    th, td { border: 2px solid #111; padding: 4px 6px; text-align: left; vertical-align: top; }
     th { background: #F7F4EC; }
-    .swatch { display: inline-block; width: 14px; height: 14px; border: 2px solid #000; vertical-align: -2px; margin-right: 4px; }
     .row2 { margin-top: 16px; }
     canvas.fig {
-      background: #D9CCFF;
-      border: 3px solid #000;
-      box-shadow: 4px 4px 0 #000;
+      background: #fff;
+      border: 3px solid #111;
+      box-shadow: 4px 4px 0 #111;
     }
     .cap { font-size: 13px; font-weight: 700; margin: 0 0 6px; }
     .canvases canvas { margin: 0 16px 0 0; vertical-align: top; }
-    body.shot { width: 668px; height: 900px; overflow: hidden; }
-    body.shot .page { padding: 26px 0 0 24px; }
+    body.shot { width: 1080px; height: 1440px; overflow: hidden; }
+    body.shot .page { padding: 0; }
+    body.shot .fit { width: 1080px; height: 1440px; margin: 0; overflow: hidden; }
+    body.shot .sheet { transform: none; }
     body.shot .tools { display: none; }
   </style>
 </head>
 <body>
   <div class="page">
-    <div class="stage">
-      <div class="card" id="card">
-        <div class="badge">本局限定 · 指纹小人</div>
-        <div class="panel" id="panel"></div>
-        <div class="code" id="code"></div>
-        <div class="meta" id="meta"></div>
-        <div class="foot">发型 / 五官 / 身体 / 四肢 / 配色由指纹切段决定 · 示意稿</div>
+    <div class="fit">
+      <div class="sheet">
+        <div class="card" id="card">
+          <div class="tag">你可能不知道</div>
+          <div class="dot"></div>
+          <div class="sticker" id="panel"></div>
+          <div class="name" id="meta"></div>
+          <div class="stamp" id="code"></div>
+        </div>
       </div>
     </div>
     <div class="tools">
-      <h1>你可能不知道 · 简笔小人</h1>
+      <h1>你可能不知道 · 形象预览</h1>
       <p class="lead" id="lead"></p>
       <form id="form" action="#">
         <input id="fp" type="text" autocomplete="off" spellcheck="false">
@@ -183,8 +231,8 @@
         var model = G.figureModel(raw);
         if (rewrite) document.getElementById('fp').value = model.fp;
         document.getElementById('code').textContent = model.fp;
-        document.getElementById('meta').textContent = model.cardLine;
-        document.getElementById('panel').innerHTML = G.figureSVG(model.fp, 520);
+        document.getElementById('meta').textContent = model.displayName;
+        document.getElementById('panel').innerHTML = G.figureSVG(model.fp, 500);
         paint('c320', model.fp, 320);
         paint('c128', model.fp, 128);
         try {
@@ -203,7 +251,7 @@
       }
       function fillTools() {
         var G = window.YKBD_FIGURE;
-        document.getElementById('lead').textContent = '组合数 ' + G.combo + '。地址栏可用 ?fp=XXXX-XXXX-XXXX ，本页不联网。';
+        document.getElementById('lead').textContent = '组合数 ' + G.combo + '。地址栏可用 ?fp=XXXX-XXXX-XXXX ，本页不联网。白卡只放形象、中文名和编码。';
         var seeds = document.getElementById('seeds');
         var i;
         for (i = 0; i < EXAMPLES.length; i++) {
