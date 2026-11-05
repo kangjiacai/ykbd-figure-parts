@@ -3,6 +3,8 @@
  *   0-1 发型(12)  2-3 眼睛(10)  4-5 嘴(10)  6 衣服(8)
  *   7 四肢姿势(8)  8-9 主色(8)  10 强调色(8)  11 配件(8)
  * 同一种子永远同一形象。绘制过程没有随机数。
+ * 图层固定：后发 → 身体 → 脖子 → 头（含耳）→ 前发刘海 → 五官。
+ * 长发/披肩发的后发片在身体后面，两侧从肩后露出，不夹在头和衣领之间。
  * 绘制全部自绘（圆、圆角矩形、折线），Chrome 61 / ES5。
  * 若已加载 js/fingerprint.js，会把 F.avatarSVG / F.drawAvatar 指到本引擎。
  */
@@ -15,6 +17,21 @@
   var CX = 160;
   var ALPHA = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 
+  /* bangs 必须盖额；short 允许露额；crop 必须露额。表里没有的 id 视为未声明。 */
+  var HAIR_TYPE = {
+    bob: 'bangs',
+    side: 'bangs',
+    twin: 'bangs',
+    long: 'bangs',
+    pony: 'bangs',
+    shoulder: 'bangs',
+    swoop: 'bangs',
+    bun: 'bangs',
+    afro: 'short',
+    spiky: 'short',
+    short: 'crop',
+    buzz: 'crop'
+  };
   var HAIR = [
     { id: 'bob', name: '齐耳波波' },
     { id: 'short', name: '短发' },
@@ -29,6 +46,10 @@
     { id: 'buzz', name: '板寸' },
     { id: 'swoop', name: '侧扫' }
   ];
+  var hairTypeI;
+  for (hairTypeI = 0; hairTypeI < HAIR.length; hairTypeI++) {
+    HAIR[hairTypeI].type = HAIR_TYPE[HAIR[hairTypeI].id] || '';
+  }
   var EYES = [
     { id: 'rect', name: '方框眼镜' },
     { id: 'round', name: '圆框眼镜' },
@@ -295,35 +316,34 @@
     var body = model.body.id;
     var pose = model.pose;
 
-    function hairCap(r, cy) {
-      put('hair', Crc(CX, cy, r, INK, INK, 5, ox));
-    }
-    function bangs(y, h) {
-      put('hair', RR(CX - 46, y, 92, h, 12, INK, INK, 5, ox));
-    }
+    function putBack(sh) { put('hairBack', sh); }
+    function putFront(sh) { put('hairFront', sh); }
 
-    /* 连帽画在头发后面。蓬圆自己已经占满头部，不再叠一圈帽檐。 */
-    if (body === 'hoodie' && hair !== 'afro') {
-      put('hood', Py(arcPts(CX, 108, 66, Math.PI * 1.08, Math.PI * 1.92, 16), false, 'none', INK, 22, ox));
-      put('hood', Py(arcPts(CX, 108, 66, Math.PI * 1.08, Math.PI * 1.92, 16), false, 'none', C.main, 12, ox));
-    }
-
-    /* —— 后发 —— */
+    /* 1. 后发。长发/披肩发从肩线起、比衣服宽，中段被下一步的身体盖住。 */
     if (hair === 'bob') {
-      hairCap(62, 100);
-      put('hair', RR(106, 118, 108, 52, 22, INK, INK, 5, ox));
-    } else if (hair === 'short' || hair === 'side' || hair === 'bun' || hair === 'twin' || hair === 'pony' || hair === 'spiky') {
-      hairCap(hair === 'spiky' ? 56 : 50, hair === 'short' ? 78 : 86);
+      putBack(Crc(CX, 92, 58, INK, INK, 5, ox));
+      putBack(RR(96, 108, 32, 36, 14, INK, INK, 5, ox));
+      putBack(RR(192, 108, 32, 36, 14, INK, INK, 5, ox));
     } else if (hair === 'long' || hair === 'shoulder') {
-      hairCap(60, 96);
-      var lockH = hair === 'long' ? 148 : 64;
-      put('hair', RR(88, 104, 26, lockH, 12, INK, INK, 5, ox));
-      put('hair', RR(206, 104, 26, lockH, 12, INK, INK, 5, ox));
+      putBack(Crc(CX, 90, 56, INK, INK, 5, ox));
+      var sheetBot = hair === 'long' ? 274 : 226;
+      var topHalf = hair === 'long' ? 86 : 78;
+      var botHalf = hair === 'long' ? 104 : 92;
+      putBack(Py([
+        [CX - topHalf, 182],
+        [CX + topHalf, 182],
+        [CX + botHalf, sheetBot],
+        [CX - botHalf, sheetBot]
+      ], true, INK, INK, 5, ox));
     } else if (hair === 'afro') {
-      put('hair', Ell(CX, 100, 86, 64, INK, INK, 5, ox));
+      putBack(Ell(CX, 88, 80, 48, INK, INK, 5, ox));
+    } else if (hair === 'buzz') {
+      putBack(Crc(CX, 78, 40, INK, INK, 4, ox));
+    } else {
+      putBack(Crc(CX, hair === 'short' ? 80 : 88, hair === 'spiky' ? 50 : 52, INK, INK, 5, ox));
     }
     if (hair === 'pony') {
-      put('hair', Py([[208, 68], [254, 104], [244, 172]], false, 'none', INK, 16, ox));
+      putBack(Py([[206, 74], [252, 116], [240, 190]], false, 'none', INK, 16, ox));
     }
     if (hair === 'spiky') {
       var spikes = [
@@ -336,14 +356,19 @@
       var si;
       for (si = 0; si < spikes.length; si++) {
         var s = spikes[si];
-        put('hair', Py([[s[0], s[1]], [s[2], s[3]], [s[4], s[5]]], true, INK, INK, 4, ox));
+        putBack(Py([[s[0], s[1]], [s[2], s[3]], [s[4], s[5]]], true, INK, INK, 4, ox));
       }
     }
 
-    /* —— 腿 —— */
+    /* 2. 身体、衣服、四肢。连帽檐也在头和脖子之前，所以落在脑后。 */
+    if (body === 'hoodie' && hair !== 'afro') {
+      put('hood', Py(arcPts(CX, 104, 66, Math.PI * 1.08, Math.PI * 1.92, 16), false, 'none', INK, 22, ox));
+      put('hood', Py(arcPts(CX, 104, 66, Math.PI * 1.08, Math.PI * 1.92, 16), false, 'none', C.main, 12, ox));
+    }
+
     function drawLeg(hip, knee, foot) {
       var startY = hip[1];
-      if (body === 'dress') startY = 234;
+      if (body === 'dress') startY = 230;
       put('leg', Py([[hip[0], startY], knee, [foot[0], foot[1] - 2]], false, 'none', INK, 22, 0));
       put('legFill', Py([[hip[0], startY], knee, [foot[0], foot[1] - 2]], false, 'none', C.pants, 14, 0));
       put('shoe', RR(foot[0] - 15, foot[1] - 4, 30, 15, 6, C.shoe, INK, 4, 0));
@@ -351,9 +376,8 @@
     drawLeg(pose.lhip, pose.lk, pose.lf);
     drawLeg(pose.rhip, pose.rk, pose.rf);
 
-    /* —— 躯干 —— */
-    var topW = 104, botW = 136, ty = 170, th = 92;
-    if (body === 'dress') { topW = 108; botW = 176; th = 66; }
+    var topW = 104, botW = 136, ty = 180, th = 76;
+    if (body === 'dress') { topW = 108; botW = 176; th = 50; }
     var shirtFill = C.main;
     if (body === 'overalls') shirtFill = C.detail;
     if (body === 'vest') shirtFill = C.detail;
@@ -385,33 +409,27 @@
       put('body', RR(136, 210, 48, 28, 8, C.detail, INK, 4, ox));
     }
 
-    put('neck', RR(142, 146, 36, 34, 10, C.skin, INK, 5, ox));
-
     if (body === 'overalls') {
-      put('body', Py([[128, 162], [150, 210]], false, 'none', INK, 10, ox));
-      put('body', Py([[128, 162], [150, 210]], false, 'none', C.main, 5, ox));
-      put('body', Py([[192, 162], [170, 210]], false, 'none', INK, 10, ox));
-      put('body', Py([[192, 162], [170, 210]], false, 'none', C.main, 5, ox));
-    }
-
-    if (body === 'sweater' || body === 'hoodie') {
-      put('collar', RR(136, 152, 48, 22, 10, C.main, INK, 4, ox));
+      put('body', Py([[132, 184], [148, 214]], false, 'none', INK, 10, ox));
+      put('body', Py([[132, 184], [148, 214]], false, 'none', C.main, 5, ox));
+      put('body', Py([[188, 184], [172, 214]], false, 'none', INK, 10, ox));
+      put('body', Py([[188, 184], [172, 214]], false, 'none', C.main, 5, ox));
     }
     if (body === 'shirt') {
-      put('collar', Py([[146, 168], [164, 168], [154, 194]], true, WHITE, INK, 4, ox));
-      put('collar', Py([[174, 168], [156, 168], [166, 194]], true, WHITE, INK, 4, ox));
-      put('body', Crc(CX, 198, 3.4, INK, 'none', 0, ox));
-      put('body', Crc(CX, 214, 3.4, INK, 'none', 0, ox));
-      put('body', Crc(CX, 230, 3.4, INK, 'none', 0, ox));
+      put('collar', Py([[146, 180], [166, 180], [156, 204]], true, WHITE, INK, 4, ox));
+      put('collar', Py([[174, 180], [154, 180], [164, 204]], true, WHITE, INK, 4, ox));
+      put('body', Crc(CX, 206, 3.4, INK, 'none', 0, ox));
+      put('body', Crc(CX, 220, 3.4, INK, 'none', 0, ox));
+      put('body', Crc(CX, 234, 3.4, INK, 'none', 0, ox));
     }
     if (body === 'hoodie') {
-      put('hood', Py([[150, 166], [142, 196]], false, 'none', INK, 3, ox));
-      put('hood', Py([[170, 166], [178, 196]], false, 'none', INK, 3, ox));
-      put('hood', Crc(142, 196, 3.5, C.detail, INK, 2, ox));
-      put('hood', Crc(178, 196, 3.5, C.detail, INK, 2, ox));
+      put('hood', Py([[150, 186], [142, 210]], false, 'none', INK, 3, ox));
+      put('hood', Py([[170, 186], [178, 210]], false, 'none', INK, 3, ox));
+      put('hood', Crc(142, 210, 3.5, C.detail, INK, 2, ox));
+      put('hood', Crc(178, 210, 3.5, C.detail, INK, 2, ox));
     }
 
-    /* —— 手臂（画在衣服之后，避免被躯干挡住） —— */
+    /* 四肢画在衣服之后、脖子之前，举手时手在头的两侧仍可见。 */
     function armColors() {
       if (model.sleeve === 'bare') return { upper: C.skin, lower: C.skin };
       if (model.sleeve === 'short') return { upper: body === 'overalls' ? C.detail : C.main, lower: C.skin };
@@ -431,6 +449,10 @@
     drawArm(pose.ls, pose.le, pose.lh);
     drawArm(pose.rs, pose.re, pose.rh);
 
+    /* 3. 脖子：画在衣服之后，头与衣领之间留下一截肤色。 */
+    put('neck', RR(CX - 15, 154, 30, 28, 8, C.skin, INK, 4, ox));
+
+    /* 4. 头 */
     if (EARS[hair]) {
       put('ear', Crc(106, 112, 10, C.skin, INK, 4, ox));
       put('ear', Crc(214, 112, 10, C.skin, INK, 4, ox));
@@ -439,37 +461,29 @@
     if (hair === 'buzz') {
       put('head', Crc(CX, 102, 54, 'none', INK, 5, ox));
     } else {
-      /* 只描下巴和脸颊，避免发顶被整圈脸的描边切一刀 */
       put('head', Py(arcPts(CX, 102, 54, 0.05 * Math.PI, 0.95 * Math.PI, 18), false, 'none', INK, 5, ox));
     }
 
-    /* —— 前发 —— */
-    if (hair === 'bob' || hair === 'twin' || hair === 'long' || hair === 'shoulder') bangs(60, 30);
-    if (hair === 'short') bangs(70, 18);
-    if (hair === 'bun') {
-      put('hair', Crc(CX, 40, 18, INK, INK, 5, ox));
-      bangs(68, 20);
-    }
+    /* 5. 前发。只有带刘海/前发的发型才把额发盖到眉上；短发等可以露额。 */
+    if (model.hair.type === 'bangs') putFront(RR(CX - 52, 54, 104, 36, 12, INK, INK, 4, ox));
+    if (hair === 'bun') putFront(Crc(CX, 40, 18, INK, INK, 5, ox));
     if (hair === 'twin') {
-      put('hair', Crc(112, 58, 16, INK, INK, 5, ox));
-      put('hair', Crc(208, 58, 16, INK, INK, 5, ox));
+      putFront(Crc(112, 58, 16, INK, INK, 5, ox));
+      putFront(Crc(208, 58, 16, INK, INK, 5, ox));
     }
-    if (hair === 'pony') {
-      put('hair', Crc(236, 96, 7, C.detail, INK, 3, ox));
-      bangs(66, 22);
-    }
+    if (hair === 'pony') putFront(Crc(236, 100, 7, C.detail, INK, 3, ox));
     if (hair === 'side') {
-      put('hair', Py([[196, 96], [176, 58], [118, 46], [100, 88], [124, 108], [168, 96]], true, INK, INK, 5, ox));
+      putFront(Py([[198, 88], [176, 52], [116, 46], [104, 84], [128, 96], [170, 88]], true, INK, INK, 5, ox));
     }
     if (hair === 'swoop') {
-      put('hair', Py([[118, 100], [132, 58], [176, 40], [220, 72], [206, 112], [150, 98]], true, INK, INK, 5, ox));
+      putFront(Py([[116, 92], [134, 52], [178, 40], [222, 70], [204, 96], [150, 90]], true, INK, INK, 5, ox));
     }
     if (hair === 'buzz') {
-      var ticks = [[146, 58, 146, 76], [160, 52, 160, 74], [174, 58, 174, 76], [134, 66, 132, 82], [186, 66, 188, 82]];
+      var ticks = [[146, 48, 146, 64], [160, 44, 160, 62], [174, 48, 174, 64]];
       var ti;
       for (ti = 0; ti < ticks.length; ti++) {
         var tk = ticks[ti];
-        put('hair', Py([[tk[0], tk[1]], [tk[2], tk[3]]], false, 'none', INK, 4, ox));
+        putFront(Py([[tk[0], tk[1]], [tk[2], tk[3]]], false, 'none', INK, 4, ox));
       }
     }
 
@@ -577,8 +591,8 @@
         return;
       }
       if (id === 'scarf') {
-        put('accessory', RR(122, 156, 76, 18, 8, col.detail, INK, 4, o));
-        put('accessory', RR(168, 170, 16, 28, 6, col.detail, INK, 4, o));
+        put('accessory', RR(122, 186, 76, 16, 8, col.detail, INK, 4, o));
+        put('accessory', RR(168, 198, 16, 26, 6, col.detail, INK, 4, o));
         return;
       }
       if (id === 'bag') {
@@ -588,14 +602,14 @@
         return;
       }
       if (id === 'band') {
-        put('accessory', Py([[118, 86], [202, 80]], false, 'none', INK, 12, o));
-        put('accessory', Py([[118, 86], [202, 80]], false, 'none', col.detail, 6, o));
+        put('accessory', Py([[118, 90], [202, 90]], false, 'none', INK, 10, o));
+        put('accessory', Py([[118, 90], [202, 90]], false, 'none', col.detail, 5, o));
         return;
       }
       if (id === 'bow') {
-        put('accessory', Crc(146, 176, 8, col.detail, INK, 3, o));
-        put('accessory', Crc(174, 176, 8, col.detail, INK, 3, o));
-        put('accessory', Crc(160, 176, 4, INK, 'none', 0, o));
+        put('accessory', Crc(146, 204, 8, col.detail, INK, 3, o));
+        put('accessory', Crc(174, 204, 8, col.detail, INK, 3, o));
+        put('accessory', Crc(160, 204, 4, INK, 'none', 0, o));
         return;
       }
       if (id === 'cheek') {
@@ -721,6 +735,22 @@
     figureShapes: figureShapes,
     seedFor: seedFor,
     combo: comboCount(),
+    HAIR_TYPE: HAIR_TYPE,
+    hairs: HAIR,
+    /* 320 画布里的对应位置：眉上约 y=64–90，眼睛 y=100。x 再加 pose.ox。 */
+    zones: {
+      neckY: 168,
+      neckHalf: 6,
+      browY0: 64,
+      browY1: 84,
+      browHalfX: 16,
+      depthMin: 80,
+      depthMax: 96,
+      eyeY: 100,
+      hair: INK,
+      bangsCoverage: 0.70,
+      cropCoverage: 0.45
+    },
     dims: [
       { key: 'hair', label: '发型', chars: '0-1', options: pub(HAIR) },
       { key: 'eyes', label: '眼睛', chars: '2-3', options: pub(EYES) },

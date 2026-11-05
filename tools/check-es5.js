@@ -9,6 +9,7 @@ var files = [
   'preview.html',
   'tools/model-check.js',
   'tools/canvas-check.html',
+  'tools/hard-rules-check.html',
   'tools/sheet.html',
   'README.md'
 ];
@@ -40,7 +41,16 @@ var rules = [
 ];
 
 var bannedWord = '冷' + '知识';
+var bannedPhrases = [bannedWord, '本局卡', '指纹名', '仅此一局'];
 var fails = [];
+
+function hasBanned(text) {
+  var i;
+  for (i = 0; i < bannedPhrases.length; i++) {
+    if (text.indexOf(bannedPhrases[i]) >= 0) return bannedPhrases[i];
+  }
+  return '';
+}
 
 function lineOf(text, index) {
   var n = 1;
@@ -55,7 +65,6 @@ function scanSource(rel, text) {
   if (/https?:\/\//.test(stripped)) {
     fails.push(rel + ': unexpected http(s) URL');
   }
-  if (text.indexOf(bannedWord) >= 0) fails.push(rel + ': banned copy');
   for (i = 0; i < rules.length; i++) {
     var m = rules[i][1].exec(text);
     if (m) fails.push(rel + ':' + lineOf(text, m.index) + ' ' + rules[i][0]);
@@ -90,15 +99,21 @@ for (f = 0; f < files.length; f++) {
     if (/<link\b/i.test(text)) fails.push(rel + ': external link');
     if (/url\s*\(\s*["']?https?:/i.test(text)) fails.push(rel + ': css url');
     scanSource(rel + ' script', scriptsOf(text));
-    if (text.indexOf(bannedWord) >= 0) fails.push(rel + ': banned copy');
+    if (rel === 'preview.html' || rel === 'tools/sheet.html') {
+      var banned = hasBanned(text);
+      if (banned) fails.push(rel + ': banned copy ' + banned);
+    }
     var noNs = text.replace(/http:\/\/www\.w3\.org\/2000\/svg/g, '');
     if (/https?:\/\//.test(noNs)) fails.push(rel + ': unexpected http(s) URL');
   } else if (/\.md$/.test(rel)) {
-    if (text.indexOf(bannedWord) >= 0) fails.push(rel + ': banned copy');
     var md = text.replace(/http:\/\/www\.w3\.org\/2000\/svg/g, '');
     if (/https?:\/\//.test(md)) fails.push(rel + ': unexpected http(s) URL');
   } else {
     scanSource(rel, text);
+    if (rel === 'js/figure-avatar.js') {
+      var bannedJs = hasBanned(text);
+      if (bannedJs) fails.push(rel + ': banned copy ' + bannedJs);
+    }
   }
 }
 

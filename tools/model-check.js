@@ -16,6 +16,18 @@ var fails = [];
 function fail(msg) { fails.push(msg); }
 
 if (G.combo !== 39321600) fail('combo ' + G.combo);
+var seenType = {};
+for (i = 0; i < G.hairs.length; i++) {
+  var hid = G.hairs[i].id;
+  if (seenType[hid]) fail('dup hair ' + hid);
+  seenType[hid] = 1;
+  if (!G.HAIR_TYPE[hid]) fail('undeclared ' + hid);
+  if (G.hairs[i].type !== G.HAIR_TYPE[hid]) fail('type mismatch ' + hid);
+  if (G.HAIR_TYPE[hid] !== 'bangs' && G.HAIR_TYPE[hid] !== 'short' && G.HAIR_TYPE[hid] !== 'crop') fail('bad type ' + hid);
+}
+for (var typeKey in G.HAIR_TYPE) {
+  if (!seenType[typeKey]) fail('orphan type ' + typeKey);
+}
 var dims = G.dims;
 var expect = { hair: 12, eyes: 10, mouth: 10, body: 8, pose: 8, main: 8, accent: 8, accessory: 8 };
 var i;
@@ -81,6 +93,15 @@ function partsOf(shapes) {
   for (i2 = 0; i2 < shapes.length; i2++) map[shapes[i2].part] = (map[shapes[i2].part] || 0) + 1;
   return map;
 }
+function extremum(shapes, name, wantMax) {
+  var found = -1;
+  var i3;
+  for (i3 = 0; i3 < shapes.length; i3++) {
+    if (shapes[i3].part !== name) continue;
+    if (found < 0 || (wantMax && i3 > found) || (!wantMax && i3 < found)) found = i3;
+  }
+  return found;
+}
 
 var hi, pi, bi, xi;
 for (hi = 0; hi < 12; hi++) {
@@ -88,8 +109,42 @@ for (hi = 0; hi < 12; hi++) {
     for (bi = 0; bi < 8; bi++) {
       for (xi = 0; xi < 8; xi++) {
         var code = G.seedFor({ hair: hi, eyes: hi % 10, mouth: hi % 10, body: bi, pose: pi, main: bi, accent: xi % 8, accessory: xi });
+        var model = G.figureModel(code);
         var shapes = G.figureShapes(code);
         var part = partsOf(shapes);
+        if ((part.hairBack || 0) < 1) fail('hairBack ' + code);
+        if (!model.hair.type) fail('undeclared ' + model.hair.id);
+        if (model.hair.type === 'bangs' && (part.hairFront || 0) < 1) fail('hairFront ' + code);
+        if ((part.neck || 0) < 1) fail('neck ' + code);
+        var lastBack = extremum(shapes, 'hairBack', true);
+        var firstLeg = extremum(shapes, 'leg', false);
+        var lastArm = extremum(shapes, 'arm', true);
+        var firstNeck = extremum(shapes, 'neck', false);
+        var firstHead = extremum(shapes, 'head', false);
+        var firstFront = extremum(shapes, 'hairFront', false);
+        var firstEye = extremum(shapes, 'eye', false);
+        var firstEar = extremum(shapes, 'ear', false);
+        var frontOk = firstFront < 0 || firstHead < firstFront;
+        var faceOk = firstHead < firstEye && (firstFront < 0 || firstFront < firstEye);
+        var earOk = firstEar < 0 || (firstNeck < firstEar && firstEar < firstEye && (firstFront < 0 || firstEar < firstFront));
+        if (!(lastBack >= 0 && lastBack < firstLeg && firstLeg < lastArm && lastArm < firstNeck && firstNeck < firstHead && frontOk && faceOk && earOk)) {
+          fail('order ' + code + ' ' + [lastBack, firstLeg, lastArm, firstNeck, firstHead, firstFront].join('<'));
+          hi = 99; pi = 99; bi = 99; xi = 99;
+        }
+        if (model.hair.id === 'long' || model.hair.id === 'shoulder') {
+          var minX = 999;
+          var maxX = -999;
+          var s2;
+          for (s2 = 0; s2 < shapes.length; s2++) {
+            if (shapes[s2].part !== 'hairBack' || shapes[s2].op !== 'poly') continue;
+            var p2;
+            for (p2 = 0; p2 < shapes[s2].pts.length; p2++) {
+              if (shapes[s2].pts[p2][0] < minX) minX = shapes[s2].pts[p2][0];
+              if (shapes[s2].pts[p2][0] > maxX) maxX = shapes[s2].pts[p2][0];
+            }
+          }
+          if (!(minX < 100 && maxX > 230)) fail('back sheet ' + code + ' ' + minX + ' ' + maxX);
+        }
         if ((part.arm || 0) < 2) fail('arms ' + code);
         if ((part.leg || 0) < 2) fail('legs ' + code);
         if ((part.hand || 0) < 2) fail('hands ' + code);

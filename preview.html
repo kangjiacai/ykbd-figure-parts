@@ -178,33 +178,12 @@
         }
         return '';
       }
-      function correctCount(rounds) {
-        var n = 0;
-        var i;
-        for (i = 0; i < rounds.length; i++) if (rounds[i].correct) n++;
-        return n;
-      }
-      function timeSum(rounds) {
-        var t = 0;
-        var i;
-        for (i = 0; i < rounds.length; i++) t += rounds[i].t;
-        return t;
-      }
       function render(raw, rewrite) {
         var G = window.YKBD_FIGURE;
         var model = G.figureModel(raw);
         if (rewrite) document.getElementById('fp').value = model.fp;
         document.getElementById('code').textContent = model.fp;
-        var line2 = model.cardLine;
-        var line1 = '自定义种子';
-        if (window.YKBD_F && YKBD_F.decode) {
-          var rounds = YKBD_F.decode(model.fp);
-          if (rounds) {
-            var n = correctCount(rounds);
-            line1 = YKBD_F.title(n) + ' · ' + n + '/5 · ' + timeSum(rounds) + '秒';
-          }
-        }
-        document.getElementById('meta').textContent = line1 + '\n' + line2;
+        document.getElementById('meta').textContent = model.cardLine;
         document.getElementById('panel').innerHTML = G.figureSVG(model.fp, 520);
         paint('c320', model.fp, 320);
         paint('c128', model.fp, 128);
