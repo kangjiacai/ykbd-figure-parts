@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>canvas check</title>
+</head>
+<body>
+  <canvas id="c" width="320" height="320"></canvas>
+  <pre id="out">CANVAS_PENDING</pre>
+  <script src="../js/fingerprint.js"></script>
+  <script src="../js/figure-avatar.js"></script>
+  <script>
+    (function () {
+      var fails = [];
+      function fail(msg) { fails.push(msg); }
+      window.onerror = function (msg) {
+        document.getElementById('out').textContent = 'CANVAS_FAIL ' + msg;
+      };
+      var c = document.getElementById('c');
+      var ctx = c.getContext('2d');
+      function snap(code) {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, 320, 320);
+        drawFigure(ctx, code, 0, 0, 320);
+        return c.toDataURL('image/png');
+      }
+      var s1 = snap('B665-6G14-RPME');
+      var s2 = snap('B665-6G14-RPME');
+      var s3 = snap('0000-0000-0000');
+      if (s1 !== s2) fail('nondeterministic');
+      if (s1 === s3) fail('seeds collide');
+      if (s1.length < 1000) fail('empty png');
+      var corner = ctx.getImageData(2, 2, 1, 1).data;
+      if (corner[3] !== 0) fail('corner painted');
+      var p, b;
+      for (p = 0; p < 8; p++) {
+        for (b = 0; b < 8; b++) {
+          var code = YKBD_FIGURE.seedFor({ hair: 0, eyes: 0, mouth: 0, body: b, pose: p, main: 0, accent: 1, accessory: 0 });
+          snap(code);
+          var shapes = YKBD_FIGURE.figureShapes(code);
+          var hands = 0;
+          var shoes = 0;
+          var i;
+          for (i = 0; i < shapes.length; i++) {
+            var sh = shapes[i];
+            if (sh.part === 'hand') {
+              hands++;
+              var hx = Math.round(sh.cx);
+              var hy = Math.round(sh.cy);
+              if (hx < 0 || hy < 0 || hx > 319 || hy > 319) fail('hand oob ' + code);
+              else if (ctx.getImageData(hx, hy, 1, 1).data[3] < 128) fail('hand empty ' + code + ' ' + hx + ',' + hy);
+            }
+            if (sh.part === 'shoe') {
+              shoes++;
+              var sx = Math.round(sh.x + sh.w / 2);
+              var sy = Math.round(sh.y + sh.h / 2);
+              if (sx < 0 || sy < 0 || sx > 319 || sy > 319) fail('shoe oob ' + code);
+              else if (ctx.getImageData(sx, sy, 1, 1).data[3] < 128) fail('shoe empty ' + code + ' ' + sx + ',' + sy);
+            }
+          }
+          if (hands < 2) fail('hands ' + code);
+          if (shoes < 2) fail('shoes ' + code);
+        }
+      }
+      document.getElementById('out').textContent = fails.length ? ('CANVAS_FAIL ' + fails.join(' | ')) : 'CANVAS_OK';
+    })();
+  </script>
+</body>
+</html>
