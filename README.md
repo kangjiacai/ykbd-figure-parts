@@ -90,8 +90,8 @@
 | `js/fingerprint.js` | 指纹编解码、FNV、rng |
 | `preview.html` | 本地预览 |
 | `tools/sheet.html` | 部件一览 |
-| `samples/*.png` | 五张按 B3 构图重渲的样张 |
-| `samples/reference-b3/` | 整身居中的视觉气质参考，不是旧裁切近景 |
+| `samples/*.png` | 已清空。引擎 samples 已清空，等待用户审过的定稿再放入 |
+| `samples/reference-b3/` | 旧视觉气质参考，暂留。不是被否决的引擎样张 |
 | `docs/FIGURE_HARD_RULES.md` | 硬规则原文 |
 | `RULES.md` | 与上一份相同的原文副本 |
 | `docs/CODEX_FIGURE_AVATAR_BRIEF.md` | 任务规格原文 |
@@ -100,21 +100,15 @@
 | `tools/canvas-check.html` | canvas 像素对照 |
 | `tools/hard-rules-check.html` | 220+ 种子的脖子、额前、四肢检查 |
 | `tools/verify.sh` | 上面三项一起跑 |
-| `tools/render-samples.sh` | 重截样张 |
+| `tools/render-samples.sh` | 截图脚本。当前引擎样张已被否决，审定稿之前不要把输出提交回 `samples/` |
 
 ## 样张
 
-由 `bash tools/render-samples.sh` 用无头 Chrome 打开 `preview.html?shot=1` 截取，1080×1440。贴纸里是完整全身，右侧是四字中文名，右下是编码。
+引擎 samples 已清空，等待用户审过的定稿再放入。
 
-卡面右侧写的是中文名，不是下面这列形象说明。
+`samples/` 根目录里由当前引擎渲出的样张已全部删除，包括 `B665-6G14-RPME.png`、`0000-0000-0000.png`、`0708-0253-0243.png`、`0509-0736-0305.png`、`0401-0174-0474.png`。用户否决了这些图的裁切、衔接和叉腰。它们不能再当视觉参考，也不要重新提交。
 
-| 文件 | 中文名 | 形象 |
-| --- | --- | --- |
-| `samples/B665-6G14-RPME.png` | 青柠麦浪 | 板寸露额 · 方块眼 · 波浪嘴 · 套头衫 · 双手叉腰 · 灰绿 · 淡紫颊点 |
-| `samples/0000-0000-0000.png` | 雨巷苇岸 | 齐耳波波 · 方框眼镜 · 一字嘴 · 荧光黄绿短袖 · 自然站立 |
-| `samples/0708-0253-0243.png` | 晚风汽水 | 蓬圆露额 · 墨镜 · 开口笑 · 冰蓝连帽衫（帽绳、口袋）· 挥手 · 小包 |
-| `samples/0509-0736-0305.png` | 候鸟橘瓣 | 长直发在身后 · 眨眼 · 齿笑 · 背带 · 迈步 · 领结 |
-| `samples/0401-0174-0474.png` | 果酱船票 | 双丸子 · 圆框眼镜 · 微笑 · 条纹衫 · 双手叉腰 · 发带 |
+`preview.html` 仍可在本地用这些种子看当前引擎，那只是预览代码，不是定稿。视觉气质只看 `samples/reference-b3/`。用户审过的定稿放进 `samples/` 之前，不要运行 `tools/render-samples.sh` 把新截图写回仓库。
 
 ## Chrome 61 自检
 
