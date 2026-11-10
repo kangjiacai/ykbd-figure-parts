@@ -68,6 +68,7 @@ for (i = 0; i < keys.length; i++) {
 }
 
 function inflated(sh) {
+  if (sh.box) return sh.box;
   var m = (sh.sw || 0) / 2;
   var box = { minx: 1e9, miny: 1e9, maxx: -1e9, maxy: -1e9 };
   function take(x, y) {
@@ -117,7 +118,7 @@ for (hi = 0; hi < 12; hi++) {
           hi = 99; pi = 99; bi = 99; xi = 99;
         }
         var part = partsOf(shapes);
-        if ((part.hairBack || 0) < 1) fail('hairBack ' + code);
+        if ((model.hair.id === 'long' || model.hair.id === 'shoulder') && (part.hairBack || 0) < 1) fail('hairBack ' + code);
         if (!model.hair.type) fail('undeclared ' + model.hair.id);
         if (model.hair.type === 'bangs' && (part.hairFront || 0) < 1) fail('hairFront ' + code);
         if ((part.neck || 0) < 1) fail('neck ' + code);
@@ -129,10 +130,11 @@ for (hi = 0; hi < 12; hi++) {
         var firstFront = extremum(shapes, 'hairFront', false);
         var firstEye = extremum(shapes, 'eye', false);
         var firstEar = extremum(shapes, 'ear', false);
+        var backOk = lastBack < 0 || lastBack < firstLeg;
         var frontOk = firstFront < 0 || firstHead < firstFront;
         var faceOk = firstHead < firstEye && (firstFront < 0 || firstFront < firstEye);
         var earOk = firstEar < 0 || (firstNeck < firstEar && firstEar < firstEye && (firstFront < 0 || firstEar < firstFront));
-        if (!(lastBack >= 0 && lastBack < firstLeg && firstLeg < lastArm && lastArm < firstNeck && firstNeck < firstHead && frontOk && faceOk && earOk)) {
+        if (!(backOk && firstLeg < lastArm && lastArm < firstNeck && firstNeck < firstHead && frontOk && faceOk && earOk)) {
           fail('order ' + code + ' ' + [lastBack, firstLeg, lastArm, firstNeck, firstHead, firstFront].join('<'));
           hi = 99; pi = 99; bi = 99; xi = 99;
         }
@@ -141,14 +143,11 @@ for (hi = 0; hi < 12; hi++) {
           var maxX = -999;
           var s2;
           for (s2 = 0; s2 < shapes.length; s2++) {
-            if (shapes[s2].part !== 'hairBack' || shapes[s2].op !== 'poly') continue;
-            var p2;
-            for (p2 = 0; p2 < shapes[s2].pts.length; p2++) {
-              if (shapes[s2].pts[p2][0] < minX) minX = shapes[s2].pts[p2][0];
-              if (shapes[s2].pts[p2][0] > maxX) maxX = shapes[s2].pts[p2][0];
-            }
+            if (shapes[s2].part !== 'hairBack' || !shapes[s2].box) continue;
+            if (shapes[s2].box.minx < minX) minX = shapes[s2].box.minx;
+            if (shapes[s2].box.maxx > maxX) maxX = shapes[s2].box.maxx;
           }
-          if (!(minX < 100 && maxX > 230)) fail('back sheet ' + code + ' ' + minX + ' ' + maxX);
+          if (!(minX < 100 && maxX > 280)) fail('back sheet ' + code + ' ' + minX + ' ' + maxX);
         }
         if ((part.arm || 0) < 2) fail('arms ' + code);
         if ((part.leg || 0) < 2) fail('legs ' + code);
@@ -160,7 +159,9 @@ for (hi = 0; hi < 12; hi++) {
         var s;
         for (s = 0; s < shapes.length; s++) {
           var box = inflated(shapes[s]);
-          if (box.minx < -0.5 || box.miny < -0.5 || box.maxx > 320.5 || box.maxy > 320.5) {
+          var limX = G.viewW || G.view;
+          var limY = G.viewH || G.view;
+          if (box.minx < -0.5 || box.miny < -0.5 || box.maxx > limX + 0.5 || box.maxy > limY + 0.5) {
             fail('oob ' + code + ' ' + shapes[s].part + ' ' + shapes[s].op + ' ' + Math.round(box.minx) + ',' + Math.round(box.miny) + ' ' + Math.round(box.maxx) + ',' + Math.round(box.maxy));
             hi = 99; pi = 99; bi = 99; xi = 99;
           }

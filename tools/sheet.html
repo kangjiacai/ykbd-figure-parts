@@ -8,8 +8,8 @@
     body { margin: 0; background: #E6E8EC; font-family: "WenQuanYi Micro Hei", "Droid Sans Fallback", sans-serif; }
     h2 { margin: 12px 8px 4px; font-size: 14px; }
     .row { white-space: nowrap; }
-    .cell { display: inline-block; width: 110px; margin: 4px; vertical-align: top; background: #D9CCFF; border: 3px solid #000; }
-    .cell svg { width: 104px; height: 104px; display: block; }
+    .cell { display: inline-block; width: 150px; margin: 4px; vertical-align: top; background: #fff; border: 3px solid #000; }
+    .cell svg { width: 144px; height: auto; display: block; }
     .cell span { display: block; font-size: 11px; text-align: center; background: #fff; padding: 2px; }
   </style>
 </head>
@@ -35,7 +35,7 @@
           idx[key] = i;
           var cell = document.createElement('div');
           cell.className = 'cell';
-          cell.innerHTML = G.figureSVG(G.seedFor(idx), 104);
+          cell.innerHTML = G.figureSVG(G.seedFor(idx), 144);
           var cap = document.createElement('span');
           cap.textContent = dim.options[i].name;
           cell.appendChild(cap);
