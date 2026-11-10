@@ -18,7 +18,7 @@
       width: 1080px;
       height: 1440px;
       background: #E6E8EC;
-      padding: 36px 40px 48px;
+      padding: 64px 60px;
       transform: scale(0.5);
       transform-origin: top left;
     }
@@ -28,7 +28,7 @@
       height: 100%;
       background: #C8F542;
       border: 6px solid #111;
-      border-radius: 40px;
+      border-radius: 36px;
       box-shadow: 12px 12px 0 #111;
       overflow: hidden;
     }
@@ -49,10 +49,10 @@
     }
     .dot {
       position: absolute;
-      right: 64px;
-      top: 108px;
-      width: 132px;
-      height: 132px;
+      right: 72px;
+      top: 140px;
+      width: 140px;
+      height: 140px;
       border: 6px solid #111;
       border-radius: 50%;
       background: #C9B8FF;
@@ -60,13 +60,13 @@
     }
     .sticker {
       position: absolute;
-      left: 18px;
-      top: 150px;
-      width: 700px;
-      height: 1040px;
+      left: 56px;
+      top: 160px;
+      width: 560px;
+      height: 980px;
       background: #fff;
       border: 6px solid #111;
-      border-radius: 36px;
+      border-radius: 32px;
       box-shadow: 14px 14px 0 #111;
       transform: rotate(-6deg);
       display: flex;
@@ -74,11 +74,12 @@
       justify-content: center;
       overflow: hidden;
     }
-    .sticker svg { width: 640px; height: 640px; display: block; }
+    .sticker svg { width: 420px; height: 756px; display: block; flex-shrink: 0; }
     .name {
       position: absolute;
-      right: 28px;
-      top: 620px;
+      right: 40px;
+      top: 560px;
+      width: 360px;
       z-index: 3;
       background: #fff;
       border: 6px solid #111;
@@ -94,15 +95,15 @@
     }
     .stamp {
       position: absolute;
-      right: 36px;
-      bottom: 42px;
+      right: 48px;
+      bottom: 88px;
       z-index: 3;
       background: #C9B8FF;
       border: 5px solid #111;
-      border-radius: 16px;
-      padding: 12px 16px;
-      font-size: 26px;
-      font-weight: 800;
+      border-radius: 18px;
+      padding: 16px 22px;
+      font-size: 28px;
+      font-weight: 700;
       letter-spacing: 0.04em;
       line-height: 1.2;
       box-shadow: 6px 6px 0 #111;
@@ -188,12 +189,12 @@
       <table id="dims"></table>
       <div class="row2 canvases">
         <div style="display:inline-block;margin-right:18px;">
-          <p class="cap">canvas · drawFigure · 320</p>
-          <canvas class="fig" id="c320" width="320" height="320"></canvas>
+          <p class="cap">canvas · drawFigure · 400×720</p>
+          <canvas class="fig" id="c320" width="400" height="720" style="width:200px;height:360px"></canvas>
         </div>
         <div style="display:inline-block;">
-          <p class="cap">128 边长仍能看见四肢</p>
-          <canvas class="fig" id="c128" width="128" height="128"></canvas>
+          <p class="cap">128 宽仍能看见四肢</p>
+          <canvas class="fig" id="c128" width="128" height="230"></canvas>
         </div>
       </div>
     </div>
@@ -232,8 +233,8 @@
         if (rewrite) document.getElementById('fp').value = model.fp;
         document.getElementById('code').textContent = model.fp;
         document.getElementById('meta').textContent = model.displayName;
-        document.getElementById('panel').innerHTML = G.figureSVG(model.fp, 500);
-        paint('c320', model.fp, 320);
+        document.getElementById('panel').innerHTML = G.figureSVG(model.fp, 420);
+        paint('c320', model.fp, 400);
         paint('c128', model.fp, 128);
         try {
           if (param('shot') !== '1' && window.history && history.replaceState) {

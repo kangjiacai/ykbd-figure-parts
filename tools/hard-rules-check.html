@@ -5,7 +5,7 @@
   <title>hard rules</title>
 </head>
 <body>
-  <canvas id="c" width="320" height="320"></canvas>
+  <canvas id="c" width="400" height="720"></canvas>
   <pre id="out">HARD_PENDING</pre>
   <script src="../js/fingerprint.js"></script>
   <script src="../js/figure-avatar.js"></script>
@@ -49,6 +49,7 @@
         return Math.abs(px[0] - rgb[0]) <= tol && Math.abs(px[1] - rgb[1]) <= tol && Math.abs(px[2] - rgb[2]) <= tol && px[3] > 180;
       }
       function bounds(sh) {
+        if (sh.box) return sh.box;
         var m = (sh.sw || 0) / 2;
         var box = { minx: 1e9, miny: 1e9, maxx: -1e9, maxy: -1e9 };
         function take(x, y) {
@@ -98,15 +99,18 @@
         var firstFront = extremum(shapes, 'hairFront', false);
         var firstEye = extremum(shapes, 'eye', false);
         var firstEar = extremum(shapes, 'ear', false);
+        var backOk = lastBack < 0 || lastBack < firstLeg;
         var frontOk = firstFront < 0 || firstHead < firstFront;
         var faceOk = firstHead < firstEye && (firstFront < 0 || firstFront < firstEye);
         var earOk = firstEar < 0 || (firstNeck < firstEar && firstEar < firstEye && (firstFront < 0 || firstEar < firstFront));
-        if (!(lastBack >= 0 && lastBack < firstLeg && firstLeg < lastArm && lastArm < firstNeck && firstNeck < firstHead && frontOk && faceOk && earOk)) {
+        if (!(backOk && firstLeg < lastArm && lastArm < firstNeck && firstNeck < firstHead && frontOk && faceOk && earOk)) {
           fail('order ' + code);
           break;
         }
         if (!model.hair.type) fail('undeclared ' + code);
         if (model.hair.type === 'bangs' && firstFront < 0) fail('missing bangs ' + code);
+        var auditProblems = G.audit(model, shapes);
+        if (auditProblems.length) fail('audit ' + auditProblems[0] + ' ' + code);
         var hands = 0;
         var shoes = 0;
         var si;
@@ -116,7 +120,7 @@
           if (sh.part === 'shoe') shoes++;
           if (sh.part === 'arm' || sh.part === 'leg' || sh.part === 'hand' || sh.part === 'shoe') {
             var box = bounds(sh);
-            if (box.minx < -0.5 || box.miny < -0.5 || box.maxx > 320.5 || box.maxy > 320.5) {
+            if (box.minx < -0.5 || box.miny < -0.5 || box.maxx > 400.5 || box.maxy > 720.5) {
               fail('limb oob ' + code + ' ' + sh.part);
               break;
             }
@@ -124,19 +128,22 @@
         }
         if (hands < 2 || shoes < 2) fail('limbs ' + code);
         ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.clearRect(0, 0, 320, 320);
-        drawFigure(ctx, code, 0, 0, 320);
+        ctx.clearRect(0, 0, 400, 720);
+        drawFigure(ctx, code, 0, 0, 400);
         var ox = model.pose.ox || 0;
         var skin = hex(model.colors.skin);
+        var hairRgbNow = hex(model.colors.hair || Z.hair);
         var neckHit = 0;
         var neckN = 0;
         var dx;
         var dy;
         var y;
+        var step = Z.neckStep || 4;
+        var cx = Z.cx || 200;
         for (dx = -Z.neckHalf; dx <= Z.neckHalf; dx += Z.neckHalf) {
-          for (dy = -4; dy <= 4; dy += 4) {
+          for (dy = -step; dy <= step; dy += step) {
             neckN++;
-            if (near(ctx.getImageData(Math.round(160 + ox + dx), Math.round(Z.neckY + dy), 1, 1).data, skin, 28)) neckHit++;
+            if (near(ctx.getImageData(Math.round(cx + ox + dx), Math.round(Z.neckY + dy), 1, 1).data, skin, 28)) neckHit++;
           }
         }
         var covHit = 0;
@@ -146,11 +153,11 @@
         for (y = Z.browY0; y <= Z.browY1; y += 4) {
           for (sx = -Z.browHalfX; sx <= Z.browHalfX; sx += 8) {
             covN++;
-            if (near(ctx.getImageData(Math.round(160 + ox + sx), y, 1, 1).data, hairRgb, 36)) covHit++;
+            if (near(ctx.getImageData(Math.round(cx + ox + sx), y, 1, 1).data, hairRgbNow, 36)) covHit++;
           }
         }
         for (y = 48; y <= Z.depthMax; y++) {
-          if (near(ctx.getImageData(Math.round(160 + ox), y, 1, 1).data, hairRgb, 40)) depth = y;
+          if (near(ctx.getImageData(Math.round(cx + ox), y, 1, 1).data, hairRgbNow, 40)) depth = y;
         }
         var frontBottom = -1;
         var fi;
@@ -165,8 +172,8 @@
           if (cov < Z.bangsCoverage) fail('bangs cov ' + code + ' ' + model.hair.id + ' ' + covHit + '/' + covN);
           if (depth < Z.depthMin || depth > Z.depthMax) fail('bangs depth ' + code + ' ' + model.hair.id + ' ' + depth);
         }
-        if ((model.hair.type === 'short' || model.hair.type === 'crop') && frontBottom > Z.eyeY - 4) {
-          fail('short over eye ' + code + ' ' + model.hair.id + ' ' + frontBottom);
+        if ((model.hair.type === 'short' || model.hair.type === 'crop') && depth > Z.depthMax) {
+          fail('short over eye ' + code + ' ' + model.hair.id + ' ' + depth);
         }
         if (model.hair.type === 'crop' && cov > Z.cropCoverage) {
           fail('crop covered ' + code + ' ' + model.hair.id + ' ' + covHit + '/' + covN);

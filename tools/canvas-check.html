@@ -5,7 +5,7 @@
   <title>canvas check</title>
 </head>
 <body>
-  <canvas id="c" width="320" height="320"></canvas>
+  <canvas id="c" width="400" height="720"></canvas>
   <pre id="out">CANVAS_PENDING</pre>
   <script src="../js/fingerprint.js"></script>
   <script src="../js/figure-avatar.js"></script>
@@ -20,8 +20,8 @@
       var ctx = c.getContext('2d');
       function snap(code) {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.clearRect(0, 0, 320, 320);
-        drawFigure(ctx, code, 0, 0, 320);
+        ctx.clearRect(0, 0, 400, 720);
+        drawFigure(ctx, code, 0, 0, 400);
         return c.toDataURL('image/png');
       }
       var s1 = snap('B665-6G14-RPME');
@@ -47,14 +47,14 @@
               hands++;
               var hx = Math.round(sh.cx);
               var hy = Math.round(sh.cy);
-              if (hx < 0 || hy < 0 || hx > 319 || hy > 319) fail('hand oob ' + code);
+              if (hx < 0 || hy < 0 || hx > 399 || hy > 719) fail('hand oob ' + code);
               else if (ctx.getImageData(hx, hy, 1, 1).data[3] < 128) fail('hand empty ' + code + ' ' + hx + ',' + hy);
             }
             if (sh.part === 'shoe') {
               shoes++;
               var sx = Math.round(sh.x + sh.w / 2);
               var sy = Math.round(sh.y + sh.h / 2);
-              if (sx < 0 || sy < 0 || sx > 319 || sy > 319) fail('shoe oob ' + code);
+              if (sx < 0 || sy < 0 || sx > 399 || sy > 719) fail('shoe oob ' + code);
               else if (ctx.getImageData(sx, sy, 1, 1).data[3] < 128) fail('shoe empty ' + code + ' ' + sx + ',' + sy);
             }
           }
