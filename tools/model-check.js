@@ -111,6 +111,11 @@ for (hi = 0; hi < 12; hi++) {
         var code = G.seedFor({ hair: hi, eyes: hi % 10, mouth: hi % 10, body: bi, pose: pi, main: bi, accent: xi % 8, accessory: xi });
         var model = G.figureModel(code);
         var shapes = G.figureShapes(code);
+        var auditProblems = G.audit(model, shapes);
+        if (auditProblems.length) {
+          fail('audit ' + auditProblems[0] + ' ' + code);
+          hi = 99; pi = 99; bi = 99; xi = 99;
+        }
         var part = partsOf(shapes);
         if ((part.hairBack || 0) < 1) fail('hairBack ' + code);
         if (!model.hair.type) fail('undeclared ' + model.hair.id);

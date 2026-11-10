@@ -107,6 +107,8 @@
         }
         if (!model.hair.type) fail('undeclared ' + code);
         if (model.hair.type === 'bangs' && firstFront < 0) fail('missing bangs ' + code);
+        var auditProblems = G.audit(model, shapes);
+        if (auditProblems.length) fail('audit ' + auditProblems[0] + ' ' + code);
         var hands = 0;
         var shoes = 0;
         var si;
