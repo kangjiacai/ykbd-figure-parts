@@ -261,8 +261,8 @@
     var sleeve = 'long';
     if (BODY[bi].id === 'dress') pants = skin;
     if (BODY[bi].id === 'overalls') pants = main.fill;
-    if (BODY[bi].id === 'tee' || BODY[bi].id === 'overalls') sleeve = 'short';
-    if (BODY[bi].id === 'dress' || BODY[bi].id === 'vest') sleeve = 'bare';
+    if (BODY[bi].id === 'tee' || BODY[bi].id === 'dress' || BODY[bi].id === 'overalls') sleeve = 'short';
+    else if (BODY[bi].id === 'shirt') sleeve = 'roll';
     return {
       fp: group(raw),
       raw: raw,
@@ -322,7 +322,18 @@
     long: 'swept', pony: 'fringe', afro: 'curly', shoulder: 'swept', spiky: 'spiky',
     buzz: 'buzz', swoop: 'swoop'
   };
-  var TORSO = 'M122 340 C122 312 140 290 164 290 L176 290 L176 324 C180 336 220 336 224 324 L224 290 L236 290 C260 290 278 312 278 340 L278 495 C278 520 250 538 200 538 C150 538 122 520 122 495 Z';
+  /* 领口开口各款共用，衣身下摆和肩宽按款式分开。 */
+  var TORSO = {
+    tee: 'M136 348 C136 318 150 290 164 290 ' + 'L176 290 L176 324 C180 336 220 336 224 324 L224 290 L236 290' + ' C250 290 264 318 264 348 L262 446 C246 464 154 464 138 446 Z',
+    sweater: 'M108 334 C108 308 138 290 164 290 ' + 'L176 290 L176 324 C180 336 220 336 224 324 L224 290 L236 290' + ' C262 290 292 308 292 334 L296 512 C284 556 116 556 104 512 Z',
+    shirt: 'M124 348 C124 316 146 290 164 290 ' + 'L176 290 L176 324 C180 336 220 336 224 324 L224 290 L236 290' + ' C254 290 276 316 276 348 L270 468 C286 524 236 498 200 490 C164 498 114 524 130 468 Z',
+    hoodie: 'M102 352 C102 318 140 290 164 290 ' + 'L176 290 L176 324 C180 336 220 336 224 324 L224 290 L236 290' + ' C260 290 298 318 298 352 L304 548 L96 548 Z',
+    stripes: 'M98 362 C116 332 146 304 164 290 ' + 'L176 290 L176 324 C180 336 220 336 224 324 L224 290 L236 290' + ' C254 304 284 332 302 362 L296 508 C272 528 128 528 104 508 Z',
+    vest: 'M118 344 C118 314 144 290 164 290 ' + 'L176 290 L176 324 C180 336 220 336 224 324 L224 290 L236 290' + ' C256 290 282 314 282 344 L276 524 C258 542 142 542 124 524 Z',
+    overalls: 'M132 346 C132 316 148 290 164 290 ' + 'L176 290 L176 324 C180 336 220 336 224 324 L224 290 L236 290' + ' C252 290 268 316 268 346 L264 430 C248 446 152 446 136 430 Z',
+    dress: 'M134 346 C134 316 150 290 164 290 ' + 'L176 290 L176 324 C180 336 220 336 224 324 L224 290 L236 290' + ' C250 290 266 316 266 346 L262 432 C246 450 154 450 138 432 Z'
+  };
+  var SKIRT = 'M150 428 C108 468 64 548 58 602 C130 624 270 624 342 602 C336 548 292 468 250 428 C220 448 180 448 150 428 Z';
   var LEG_L = 'M162 505 C155 575 148 635 142 665 L176 668 C180 635 186 575 190 512 Z';
   var LEG_R = 'M238 505 C245 575 252 635 258 665 L224 668 C220 635 214 575 210 512 Z';
   var LEG_L_OUT = 'M162 498 C154 555 145 618 136 666 L180 670 C186 618 192 555 196 508 Z';
@@ -362,6 +373,57 @@
     lean: [[112, 476, 20, 18], [296, 452, 20, 18]],
     wide: [[40, 452, 22, 20], [360, 452, 22, 20]]
   };
+  /* s 肩、e 短袖口（肘上）、r 卷袖口、h 手。短袖和卷袖用这两段，长袖仍用上面的整臂。 */
+  var LIMB = {
+    standL: { s: [134, 346], e: [118, 392], r: [106, 442], h: [98, 472] },
+    standR: { s: [266, 346], e: [282, 392], r: [294, 442], h: [302, 472] },
+    waveL: { s: [136, 336], e: [112, 388], r: [88, 428], h: [68, 448] },
+    waveR: { s: [270, 330], e: [304, 268], r: [322, 230], h: [334, 204] },
+    outL: { s: [136, 340], e: [100, 388], r: [66, 426], h: [40, 452] },
+    outR: { s: [264, 340], e: [300, 388], r: [334, 426], h: [360, 452] },
+    upL: { s: [136, 334], e: [108, 272], r: [84, 232], h: [66, 204] },
+    upR: { s: [264, 334], e: [292, 272], r: [316, 232], h: [334, 204] },
+    hipL: { s: [136, 342], e: [108, 386], r: [90, 416], h: [78, 434] },
+    akL: { s: [136, 340], e: [100, 380], r: [82, 408], h: [72, 424] },
+    akR: { s: [264, 340], e: [300, 380], r: [318, 408], h: [328, 424] },
+    walkL: { s: [136, 336], e: [116, 276], r: [102, 234], h: [92, 206] },
+    leanL: { s: [132, 346], e: [118, 400], r: [114, 446], h: [112, 476] },
+    leanR: { s: [268, 342], e: [288, 390], r: [294, 428], h: [296, 452] }
+  };
+  var POSE_ARM = {
+    stand: ['standL', 'standR'],
+    wave: ['waveL', 'waveR'],
+    wide: ['outL', 'outR'],
+    cheer: ['upL', 'upR'],
+    hip: ['hipL', 'standR'],
+    akimbo: ['akL', 'akR'],
+    walk: ['walkL', 'standR'],
+    lean: ['leanL', 'leanR']
+  };
+  function n1(v) { return Math.round(v * 10) / 10; }
+  function taper(a, b, w0, w1) {
+    var dx = b[0] - a[0];
+    var dy = b[1] - a[1];
+    var len = Math.sqrt(dx * dx + dy * dy);
+    if (len < 0.01) len = 0.01;
+    var px = -dy / len;
+    var py = dx / len;
+    function xy(p, w, sign) {
+      return n1(p[0] + px * w * sign) + ' ' + n1(p[1] + py * w * sign);
+    }
+    return 'M' + xy(a, w0, 1) + ' L' + xy(b, w1, 1) + ' L' + xy(b, w1, -1) + ' L' + xy(a, w0, -1) + ' Z';
+  }
+  function across(a, b, t, half) {
+    var x = a[0] + (b[0] - a[0]) * t;
+    var y = a[1] + (b[1] - a[1]) * t;
+    var dx = b[0] - a[0];
+    var dy = b[1] - a[1];
+    var len = Math.sqrt(dx * dx + dy * dy);
+    if (len < 0.01) len = 0.01;
+    var px = -dy / len * half;
+    var py = dx / len * half;
+    return 'M' + n1(x - px) + ' ' + n1(y - py) + ' L' + n1(x + px) + ' ' + n1(y + py);
+  }
 
   function pathBox(d) {
     var re = /-?\d+(?:\.\d+)?/g;
@@ -437,10 +499,25 @@
     var pose = model.pose.id;
     var SW = 7;
     var shirt = C.main;
-    var armFill = C.main;
+    var sleeveKind = 'long';
+    var sleeveColor = C.main;
     if (body === 'overalls' || body === 'vest') shirt = C.detail;
-    if (body === 'dress' || body === 'vest') armFill = C.skin;
-    else armFill = shirt;
+    if (body === 'tee' || body === 'dress') {
+      sleeveKind = 'short';
+      sleeveColor = C.main;
+    } else if (body === 'overalls') {
+      sleeveKind = 'short';
+      sleeveColor = C.detail;
+    } else if (body === 'shirt') {
+      sleeveKind = 'roll';
+      sleeveColor = C.main;
+    } else if (body === 'vest') {
+      sleeveKind = 'long';
+      sleeveColor = C.detail;
+    } else if (body === 'stripes' || body === 'sweater' || body === 'hoodie') {
+      sleeveKind = 'long';
+      sleeveColor = C.main;
+    }
     var legMode = 'down';
     if (pose === 'wave' || pose === 'wide' || pose === 'cheer') legMode = 'apart';
     if (pose === 'walk') legMode = 'stride';
@@ -460,16 +537,33 @@
     var shoeL = legMode === 'stride' ? SHOE_L_WALK : (legMode === 'apart' ? SHOE_L_OUT : SHOE_L);
     var shoeR = legMode === 'stride' ? SHOE_R_WALK : (legMode === 'apart' ? SHOE_R_OUT : SHOE_R);
 
+    var calfL = 'M146 598 L140 668 L170 670 L172 600 Z';
+    var calfR = 'M230 598 L234 668 L264 668 L258 600 Z';
+    if (legMode === 'apart') {
+      calfL = 'M132 598 L124 670 L156 672 L160 600 Z';
+      calfR = 'M252 598 L270 668 L302 666 L280 598 Z';
+    } else if (legMode === 'stride') {
+      calfL = 'M100 596 L92 668 L124 670 L128 598 Z';
+      calfR = 'M286 590 L308 656 L336 652 L310 588 Z';
+    }
+    var torsoD = TORSO[body] || TORSO.tee;
+
     /* 硬投影：整身纯色偏移，先于一切部件。 */
-    add('shadow', P('M122 340 C122 312 140 290 164 290 L176 290 L176 320 C180 336 220 336 224 320 L224 290 L236 290 C260 290 278 312 278 340 L280 505 C280 530 245 550 200 550 C155 550 120 530 120 505 Z', '#111', 'none', 0, 10, 12));
+    add('shadow', P(torsoD, '#111', 'none', 0, 10, 12));
+    if (body === 'dress') add('shadow', P(SKIRT, '#111', 'none', 0, 10, 12));
     add('shadow', El(HEAD_CX, HEAD_CY, 90, 96, '#111', 'none', 0));
     shapes[shapes.length - 1].tx = 10;
     shapes[shapes.length - 1].ty = 12;
     stampBox(shapes[shapes.length - 1]);
     add('shadow', P(armL, '#111', 'none', 0, 10, 12));
     add('shadow', P(armR, '#111', 'none', 0, 10, 12));
-    add('shadow', P(legL, '#111', 'none', 0, 10, 12));
-    add('shadow', P(legR, '#111', 'none', 0, 10, 12));
+    if (body === 'dress') {
+      add('shadow', P(calfL, '#111', 'none', 0, 10, 12));
+      add('shadow', P(calfR, '#111', 'none', 0, 10, 12));
+    } else {
+      add('shadow', P(legL, '#111', 'none', 0, 10, 12));
+      add('shadow', P(legR, '#111', 'none', 0, 10, 12));
+    }
 
     if (hairId === 'long' || hairId === 'shoulder') {
       var bot = hairId === 'long' ? 535 : 430;
@@ -492,8 +586,13 @@
       ));
     }
 
-    add('leg', P(legL, C.pants, INK, SW));
-    add('leg', P(legR, C.pants, INK, SW));
+    if (body === 'dress') {
+      add('leg', P(calfL, C.skin, INK, SW));
+      add('leg', P(calfR, C.skin, INK, SW));
+    } else {
+      add('leg', P(legL, C.pants, INK, SW));
+      add('leg', P(legR, C.pants, INK, SW));
+    }
     add('shoeUpper', P(shoeL, C.shoe, INK, SW));
     add('shoeUpper', P(shoeR, C.shoe, INK, SW));
     if (legMode === 'stride') {
@@ -513,57 +612,73 @@
       add('shoeStripe', P('M232 676 L274 676', 'none', C.accent, 4));
     }
 
-    add('body', P(TORSO, shirt, INK, SW));
+    add('body', P(torsoD, shirt, INK, SW));
     add('collar', P('M164 290 L176 290 M224 290 L236 290', 'none', INK, 5));
 
     if (body === 'hoodie') {
-      add('hood', P('M184 308 L184 360 M216 308 L216 360', 'none', INK, 4));
-      add('hood', Ci(184, 374, 6, C.accent, INK, 3));
-      add('hood', Ci(216, 374, 6, C.accent, INK, 3));
-      add('pocket', P('M150 470 L162 420 L238 420 L250 470 Z', 'none', INK, 5));
-      add('body', P('M132 500 L268 500', 'none', INK, 4));
+      add('hood', P('M104 356 C78 372 74 430 116 458 L160 408 C146 366 126 344 104 356 Z', shirt, INK, 5));
+      add('hood', P('M296 356 C322 372 326 430 284 458 L240 408 C254 366 274 344 296 356 Z', shirt, INK, 5));
+      add('hood', P('M186 348 L176 418 M214 348 L224 418', 'none', INK, 4));
+      add('hood', Ci(176, 422, 7, C.accent, INK, 3));
+      add('hood', Ci(224, 422, 7, C.accent, INK, 3));
+      add('pocket', P('M132 468 L148 424 L252 424 L268 468 L260 530 L140 530 Z', C.deep, INK, 5));
     } else if (body === 'overalls') {
-      add('body', P('M150 320 L160 400 M250 320 L240 400', 'none', C.main, 10));
-      add('body', P('M150 320 L160 400 M250 320 L240 400', 'none', INK, 3));
-      add('body', P('M152 390 L248 390 L262 520 C230 536 170 536 138 520 Z', C.main, INK, 5));
-      add('button', Ci(164, 402, 6, INK, 'none', 0));
-      add('button', Ci(236, 402, 6, INK, 'none', 0));
-      add('pocket', P('M180 418 L220 418 L220 450 L180 450 Z', 'none', INK, 4));
+      add('body', P('M146 330 L158 392 M254 330 L242 392', 'none', C.main, 12));
+      add('body', P('M146 330 L158 392 M254 330 L242 392', 'none', INK, 3));
+      add('body', P('M148 378 L252 378 L270 530 C236 552 164 552 130 530 Z', C.main, INK, 5));
+      add('button', Ci(162, 396, 6, INK, 'none', 0));
+      add('button', Ci(238, 396, 6, INK, 'none', 0));
+      add('pocket', P('M176 412 L224 412 L224 448 L176 448 Z', 'none', INK, 4));
     } else if (body === 'shirt') {
-      add('collar', P('M164 290 L200 378 L236 290 Z', WHITE, INK, 5));
-      add('body', P('M200 360 L200 520', 'none', INK, 5));
-      add('collar', P('M164 290 L150 350 L186 360 Z', shirt, INK, 4.5));
-      add('collar', P('M236 290 L250 350 L214 360 Z', shirt, INK, 4.5));
-      add('pocket', P('M144 440 L180 440 M220 440 L256 440', 'none', INK, 5));
-      add('button', Ci(200, 400, 5, C.accent, INK, 2));
-      add('button', Ci(200, 450, 5, C.accent, INK, 2));
+      add('collar', P('M164 292 L148 348 L188 338 Z', shirt, INK, 4.5));
+      add('collar', P('M236 292 L252 348 L212 338 Z', shirt, INK, 4.5));
+      add('body', P('M200 336 L200 478', 'none', INK, 4));
+      add('button', Ci(200, 360, 5, C.accent, INK, 2));
+      add('button', Ci(200, 396, 5, C.accent, INK, 2));
+      add('button', Ci(200, 432, 5, C.accent, INK, 2));
+      add('pocket', P('M214 390 L248 390 L248 422 L214 422 Z', 'none', INK, 4));
     } else if (body === 'sweater') {
-      add('body', P('M148 500 L252 500', 'none', C.deep, 8));
-      add('body', P('M140 518 L260 518', 'none', C.deep, 8));
-      add('collar', P('M168 300 Q200 318 232 300', 'none', C.deep, 6));
+      add('collar', P('M150 306 Q200 336 250 306', 'none', C.deep, 12));
+      add('body', P('M112 492 L288 492 L278 548 C236 564 164 564 122 548 Z', C.deep, INK, 5));
     } else if (body === 'dress') {
-      add('body', P('M150 500 C110 540 96 600 108 640 L292 640 C304 600 290 540 250 500 Z', shirt, INK, SW));
-      add('button', Ci(200, 470, 6, C.accent, INK, 2));
+      add('body', P(SKIRT, shirt, INK, SW));
+      add('body', P('M154 440 L246 440', 'none', INK, 5));
     } else if (body === 'vest') {
-      add('body', P('M136 360 L146 520 L196 516 L186 378 Z', C.main, INK, 5));
-      add('body', P('M264 360 L254 520 L204 516 L214 378 Z', C.main, INK, 5));
-      add('button', Ci(190, 420, 5, INK, 'none', 0));
-      add('button', Ci(190, 460, 5, INK, 'none', 0));
+      add('body', P('M132 352 L142 468 L196 462 L184 368 Z', C.main, INK, 5));
+      add('body', P('M268 352 L258 468 L204 462 L216 368 Z', C.main, INK, 5));
+      add('button', Ci(188, 400, 5, INK, 'none', 0));
+      add('button', Ci(188, 436, 5, INK, 'none', 0));
     } else if (body === 'stripes') {
-      add('stripe', P('M150 400 L250 400 L248 418 L152 418 Z', C.accent, 'none', 0));
-      add('stripe', P('M146 444 L254 444 L252 462 L148 462 Z', C.accent, 'none', 0));
-      add('stripe', P('M144 488 L256 488 L254 506 L146 506 Z', C.accent, 'none', 0));
-      add('body', P(TORSO, 'none', INK, SW));
-    } else {
-      add('pocket', P('M214 400 L256 400 L256 436 L214 436 Z', 'none', INK, 4.5));
-      add('pocket', P('M214 412 L256 412', 'none', INK, 4));
-      add('button', Ci(200, 360, 6, INK, 'none', 0));
-      add('button', Ci(200, 392, 6, INK, 'none', 0));
-      add('body', P('M132 470 L268 470', 'none', C.accent, 10));
+      add('stripe', P('M124 390 L276 390 L274 416 L126 416 Z', C.accent, 'none', 0));
+      add('stripe', P('M118 432 L282 432 L280 458 L120 458 Z', C.accent, 'none', 0));
+      add('stripe', P('M114 474 L286 474 L284 500 L116 500 Z', C.accent, 'none', 0));
+      add('body', P(torsoD, 'none', INK, SW));
     }
 
-    add('arm', P(armL, armFill, INK, SW));
-    add('arm', P(armR, armFill, INK, SW));
+    var armKeys = POSE_ARM[pose];
+    var ai;
+    for (ai = 0; ai < armKeys.length; ai++) {
+      var key = armKeys[ai];
+      var limb = LIMB[key];
+      if (sleeveKind === 'short') {
+        add('arm', P(taper(limb.e, limb.h, 14, 11), C.skin, INK, SW));
+        add('arm', P(taper(limb.s, limb.e, 18, 15), sleeveColor, INK, SW));
+      } else if (sleeveKind === 'roll') {
+        add('arm', P(taper(limb.r, limb.h, 13, 11), C.skin, INK, SW));
+        add('arm', P(taper(limb.s, limb.r, 18, 15), sleeveColor, INK, SW));
+        add('cuff', P(across(limb.s, limb.h, 0.72, 16), 'none', WHITE, 8));
+        add('cuff', P(across(limb.s, limb.h, 0.78, 15), 'none', INK, 3));
+      } else {
+        add('arm', P(ARM[key], sleeveColor, INK, SW));
+        if (body === 'sweater') {
+          add('cuff', P(across(limb.s, limb.h, 0.78, 16), 'none', C.deep, 12));
+          add('cuff', P(across(limb.s, limb.h, 0.86, 14), 'none', INK, 3));
+        } else if (body === 'stripes') {
+          add('stripe', P(across(limb.s, limb.h, 0.38, 16), 'none', C.accent, 14));
+          add('stripe', P(across(limb.s, limb.h, 0.62, 15), 'none', C.accent, 14));
+        }
+      }
+    }
     add('hand', El(hands[0][0], hands[0][1], hands[0][2], hands[0][3], C.skin, INK, 6));
     add('hand', El(hands[1][0], hands[1][1], hands[1][2], hands[1][3], C.skin, INK, 6));
     if (pose === 'wave') {
